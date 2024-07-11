@@ -1,69 +1,63 @@
 package main
 
 import (
-    "log"
-    "fmt"
+	"log"
+	"sync"
 
-    "github.com/gdamore/tcell/v2"
-    "github.com/rivo/tview"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 
-    "github.com/phdah/lazydbrix/internal/databricks"
-    "github.com/phdah/lazydbrix/internal/keymaps"
+	"github.com/phdah/lazydbrix/internal/databricks"
+	"github.com/phdah/lazydbrix/internal/keymaps"
+	"github.com/phdah/lazydbrix/internal/tui"
+    "github.com/phdah/lazydbrix/internal/utils"
 )
 
 func main() {
     // Variable decleration
-    // TODO: The profile should be set dynamically
-    profile := "test"
+    // TODO: The profile should be set dynamically from the config file
+    // profiles := []string{"test", "prod"}
+    configPath := "~/.databrickscfg"
+    profiles, err := utils.GetProfiles(configPath)
+    if err != nil {
+        log.Fatalf("Failed to fetch profiles: %v", err)
+    }
+    var mu sync.Mutex
 
     // Databricks
-    nameToIDMap, _, err := databricks.GetClusterNames(profile)
+    nameToIDMap, _, err := databricks.GetClusterNames(profiles[0])
     if err != nil {
         log.Fatalf("Failed to fetch cluster name: %v", err)
     }
 
-    // TUI
+    // TUI components
     app := tview.NewApplication()
+    envList := tui.EnvListSetup(profiles)
+    prevText := tui.PreTextSetup()
+    clusterList := tui.ClusterListSetup(&mu, profiles[0], app, nameToIDMap, prevText)
 
-    // Create right side lists
-    envList := tview.NewList().
-        AddItem("dev", "", 0, nil).
-        AddItem("prod", "", 0, nil)
-
-    clusterList := tview.NewList()
-
-    for clusterName, clusterId := range nameToIDMap {
-        clusterList.AddItem(fmt.Sprintf("%s: %s", clusterName, clusterId), "", 0, nil)
-    }
-
-    // Create a left Flex
-    envList.SetBorder(true).SetTitle("Workspaces")
-    clusterList.SetBorder(true).SetTitle("Clusters")
+    // Flex components
     leftFlex := tview.NewFlex().SetDirection(tview.FlexRow).
         AddItem(envList, 0, 1, true).
         AddItem(clusterList, 0, 1, false)
 
     // Create a right Flex
-    prevBox := tview.NewBox().
-        SetBorder(true).
-        SetTitle("Cluster information")
-
     rightFlex := tview.NewFlex().
-        AddItem(prevBox, 0, 1, true)
+        AddItem(prevText, 0, 1, true)
 
     mainFlex := tview.NewFlex().
         SetDirection(tview.FlexColumn).
         AddItem(leftFlex, 0, 1, true).
         AddItem(rightFlex, 0, 1, false)
 
-    // Create the frame and add text to it
+    // Frame components
     frame := tview.NewFrame(mainFlex).
         AddText("lazydbrix", true, tview.AlignCenter, tcell.ColorGreen).
         AddText("Lazily deal with Databricks", true, tview.AlignCenter, tcell.ColorWhite).
         AddText("www.github.com/phdah/lazydbrix", false, tview.AlignRight, tcell.ColorGreen)
 
     // Set the keymaps
-    keymaps.SetKeymaps(app, mainFlex, leftFlex, rightFlex, envList, clusterList, prevBox)
+    keymaps.SetKeymaps(app, mainFlex, leftFlex, rightFlex, envList, clusterList, prevText)
 
     // Set the root and run the application
     if err := app.SetRoot(frame, true).SetFocus(envList).Run(); err != nil {

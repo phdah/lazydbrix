@@ -6,7 +6,7 @@ import (
     "github.com/phdah/lazydbrix/internal/utils"
 )
 
-func SetKeymaps(app *tview.Application, mainFlex *tview.Flex, leftFlex, rightFlex *tview.Flex, envList, clusterList *tview.List, prevBox *tview.Box) {
+func SetKeymaps(app *tview.Application, mainFlex *tview.Flex, leftFlex, rightFlex *tview.Flex, envList, clusterList *tview.List, prevBox *tview.TextView) {
     app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
         switch event.Key() {
         case tcell.KeyTab: // Handle Tab key

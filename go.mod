@@ -6,6 +6,7 @@ require (
 	github.com/databricks/databricks-sdk-go v0.43.2
 	github.com/gdamore/tcell/v2 v2.7.1
 	github.com/rivo/tview v0.0.0-20240625185742-b0a7293b8130
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
@@ -42,5 +43,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 )

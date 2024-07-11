@@ -2,7 +2,6 @@ package databricks
 
 import (
     "context"
-    "fmt"
     "log"
     "encoding/json"
 
@@ -69,12 +68,12 @@ func GetClusterDetails(profile, clusterID string) (*ClusterInfo, error) {
 }
 
 // DisplayClusterDetails formats and displays cluster details as JSON.
-func DisplayClusterDetails(details *ClusterInfo) {
+func FormatClusterDetails(details *ClusterInfo) (string) {
 	jsonData, err := json.MarshalIndent(details, "", "    ")
 	if err != nil {
 		log.Fatalf("Failed to marshal cluster details: %v", err)
 	}
 
-	fmt.Println(string(jsonData))
+	return string(jsonData)
 }
 
