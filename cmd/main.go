@@ -1,11 +1,13 @@
 package main
 
 import (
-    "fmt"
+	"log"
 
-    "github.com/gdamore/tcell/v2"
-    "github.com/rivo/tview"
-    "github.com/phdah/lazydbrix/internal/keymaps"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+
+	"github.com/phdah/lazydbrix/internal/databricks"
+	"github.com/phdah/lazydbrix/internal/keymaps"
 )
 
 func main() {
@@ -15,15 +17,22 @@ func main() {
     envList := tview.NewList().
         AddItem("dev", "", 0, nil).
         AddItem("prod", "", 0, nil)
-    envList.SetBorder(true).SetTitle("Workspaces")
 
-    clusterList := tview.NewList().
-        AddItem("Cluster 1", "", 0, nil).
-        AddItem("Cluster 2", "", 0, nil).
-        AddItem("Cluster 3", "", 0, nil)
-    clusterList.SetBorder(true).SetTitle("Clusters")
+    clusterList := tview.NewList()
+
+    // TODO: The profile should be set dynamically
+    profile := "test"
+    clusterNames, err := databricks.GetClusterNames(profile)
+    if err != nil {
+        log.Fatalf("Failed to fetch cluster name: %v", err)
+    }
+    for _, name := range clusterNames {
+        clusterList.AddItem(name, "", 0, nil)
+    }
 
     // Create a left Flex
+    envList.SetBorder(true).SetTitle("Workspaces")
+    clusterList.SetBorder(true).SetTitle("Clusters")
     leftFlex := tview.NewFlex().SetDirection(tview.FlexRow).
         AddItem(envList, 0, 1, true).
         AddItem(clusterList, 0, 1, false)
@@ -54,6 +63,4 @@ func main() {
     if err := app.SetRoot(frame, true).SetFocus(envList).Run(); err != nil {
         panic(err)
     }
-    fmt.Println(mainFlex.GetItemCount())
-    fmt.Println(mainFlex.GetItem(0) == app.GetFocus())
 }
