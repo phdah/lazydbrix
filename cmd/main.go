@@ -1,16 +1,28 @@
 package main
 
 import (
-	"log"
+    "log"
+    "fmt"
 
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
+    "github.com/gdamore/tcell/v2"
+    "github.com/rivo/tview"
 
-	"github.com/phdah/lazydbrix/internal/databricks"
-	"github.com/phdah/lazydbrix/internal/keymaps"
+    "github.com/phdah/lazydbrix/internal/databricks"
+    "github.com/phdah/lazydbrix/internal/keymaps"
 )
 
 func main() {
+    // Variable decleration
+    // TODO: The profile should be set dynamically
+    profile := "test"
+
+    // Databricks
+    nameToIDMap, _, err := databricks.GetClusterNames(profile)
+    if err != nil {
+        log.Fatalf("Failed to fetch cluster name: %v", err)
+    }
+
+    // TUI
     app := tview.NewApplication()
 
     // Create right side lists
@@ -20,14 +32,8 @@ func main() {
 
     clusterList := tview.NewList()
 
-    // TODO: The profile should be set dynamically
-    profile := "test"
-    clusterNames, err := databricks.GetClusterNames(profile)
-    if err != nil {
-        log.Fatalf("Failed to fetch cluster name: %v", err)
-    }
-    for _, name := range clusterNames {
-        clusterList.AddItem(name, "", 0, nil)
+    for clusterName, clusterId := range nameToIDMap {
+        clusterList.AddItem(fmt.Sprintf("%s: %s", clusterName, clusterId), "", 0, nil)
     }
 
     // Create a left Flex
