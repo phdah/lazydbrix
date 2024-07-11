@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"github.com/rivo/tview"
+    "github.com/rivo/tview"
 )
 
 func PreTextSetup() (*tview.TextView) {

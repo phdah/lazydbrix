@@ -1,40 +1,44 @@
 package main
 
 import (
-	"log"
-	"sync"
+    "sync"
+    "log"
 
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
+    "github.com/gdamore/tcell/v2"
+    "github.com/rivo/tview"
 
-	"github.com/phdah/lazydbrix/internal/databricks"
-	"github.com/phdah/lazydbrix/internal/keymaps"
-	"github.com/phdah/lazydbrix/internal/tui"
+    "github.com/phdah/lazydbrix/internal/databricks"
+    "github.com/phdah/lazydbrix/internal/keymaps"
+    "github.com/phdah/lazydbrix/internal/tui"
     "github.com/phdah/lazydbrix/internal/utils"
 )
 
 func main() {
-    // Variable decleration
-    // TODO: The profile should be set dynamically from the config file
-    // profiles := []string{"test", "prod"}
+    // Variable declaration
     configPath := "~/.databrickscfg"
-    profiles, err := utils.GetProfiles(configPath)
-    if err != nil {
-        log.Fatalf("Failed to fetch profiles: %v", err)
-    }
+    profiles := utils.GetProfiles(configPath)
+    // profiles := []string{"prod", "test"}
+    currentProfile := profiles[0]
     var mu sync.Mutex
 
+	logs := tview.NewTextView().
+		SetDynamicColors(true).
+		SetRegions(true).
+		SetWordWrap(true)
+
+	logs.SetBorder(true).SetTitle("Logs")
+
+	// Redirect standard log output to the TextView
+	log.SetOutput(logs)
+
     // Databricks
-    nameToIDMap, _, err := databricks.GetClusterNames(profiles[0])
-    if err != nil {
-        log.Fatalf("Failed to fetch cluster name: %v", err)
-    }
+    allNameToIDMap := databricks.GetAllEnvClusters(&mu, profiles)
 
     // TUI components
     app := tview.NewApplication()
-    envList := tui.EnvListSetup(profiles)
     prevText := tui.PreTextSetup()
-    clusterList := tui.ClusterListSetup(&mu, profiles[0], app, nameToIDMap, prevText)
+    clusterList := tui.ClusterListSetup(&mu, &currentProfile, app, allNameToIDMap, prevText)
+    envList := tui.EnvListSetup(&mu, &currentProfile, app, profiles, clusterList, allNameToIDMap, prevText)
 
     // Flex components
     leftFlex := tview.NewFlex().SetDirection(tview.FlexRow).
@@ -42,8 +46,9 @@ func main() {
         AddItem(clusterList, 0, 1, false)
 
     // Create a right Flex
-    rightFlex := tview.NewFlex().
-        AddItem(prevText, 0, 1, true)
+    rightFlex := tview.NewFlex().SetDirection(tview.FlexRow).
+        AddItem(prevText, 0, 1, true).
+        AddItem(logs, 0, 3, false)
 
     mainFlex := tview.NewFlex().
         SetDirection(tview.FlexColumn).
