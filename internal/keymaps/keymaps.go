@@ -6,7 +6,7 @@ import (
     "github.com/phdah/lazydbrix/internal/utils"
 )
 
-func SetKeymaps(app *tview.Application, mainFlex *tview.Flex, leftFlex, rightFlex *tview.Flex, envList, clusterList *tview.List, prevBox *tview.TextView) {
+func SetKeymaps(app *tview.Application, mainFlex *tview.Flex, leftFlex, rightFlex *tview.Flex, envList, clusterList *tview.List, prevBox *tview.TextView, logs *tview.TextView) {
     app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
         switch event.Key() {
         case tcell.KeyTab: // Handle Tab key
@@ -32,14 +32,14 @@ func SetKeymaps(app *tview.Application, mainFlex *tview.Flex, leftFlex, rightFle
                 }
                 return nil
             case 'h': // Move focus to the list underneath in the flex
-                if app.GetFocus() == rightFlex || app.GetFocus() == prevBox {
+                if app.GetFocus() == rightFlex || app.GetFocus() == prevBox || app.GetFocus() == logs {
                     utils.MoveFlexItemUp(app, rightFlex)
                 } else if app.GetFocus() == leftFlex || app.GetFocus() == envList || app.GetFocus() == clusterList {
                     utils.MoveFlexItemUp(app, leftFlex)
                 }
                 return nil
             case 'l': // Move focus to the list above in the flex
-                if app.GetFocus() == rightFlex || app.GetFocus() == prevBox {
+                if app.GetFocus() == rightFlex || app.GetFocus() == prevBox || app.GetFocus() == logs{
                     utils.MoveFlexItemDown(app, rightFlex)
                 } else if app.GetFocus() == leftFlex || app.GetFocus() == envList || app.GetFocus() == clusterList {
                     utils.MoveFlexItemDown(app, leftFlex)
