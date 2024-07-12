@@ -4,6 +4,7 @@ go 1.22.4
 
 require (
 	github.com/databricks/databricks-sdk-go v0.43.2
+	github.com/elliotchance/orderedmap/v2 v2.2.0
 	github.com/gdamore/tcell/v2 v2.7.1
 	github.com/rivo/tview v0.0.0-20240625185742-b0a7293b8130
 	gopkg.in/ini.v1 v1.67.0

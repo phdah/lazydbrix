@@ -9,6 +9,7 @@ import (
 
     "github.com/databricks/databricks-sdk-go"
     "github.com/databricks/databricks-sdk-go/service/compute"
+    "github.com/elliotchance/orderedmap/v2"
 )
 
 // ClusterInfo contains only the desired fields from the cluster details.
@@ -25,7 +26,7 @@ type ClusterInfo struct {
 }
 
 // GetClusterNames fetches all cluster names and IDs from the specified profile.
-func GetClusterNames(profile string) (map[string]string, map[string]string, error) {
+func GetClusterNames(profile string) (*orderedmap.OrderedMap[string, string], *orderedmap.OrderedMap[string, string], error) {
     w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
         Profile: profile,
     }))
@@ -35,21 +36,21 @@ func GetClusterNames(profile string) (map[string]string, map[string]string, erro
         return nil, nil, err
     }
 
-    nameToIDMap := make(map[string]string)
-    idToNameMap := make(map[string]string)
+    nameToIDMap := orderedmap.NewOrderedMap[string, string]()
+    idToNameMap := orderedmap.NewOrderedMap[string, string]()
     for _, c := range all {
         if strings.HasPrefix(c.ClusterName, "job-") {
             continue
         }
-        nameToIDMap[c.ClusterName] = c.ClusterId
-        idToNameMap[c.ClusterId] = c.ClusterName
+        nameToIDMap.Set(c.ClusterName, c.ClusterId)
+        idToNameMap.Set(c.ClusterId, c.ClusterName)
     }
 
     return nameToIDMap, idToNameMap, nil
 }
 
-func GetAllEnvClusters(mu *sync.Mutex, profiles []string) (map[string]map[string]string){
-    profileClusters := make(map[string]map[string]string)
+func GetAllEnvClusters(mu *sync.Mutex, profiles []string) (map[string]*orderedmap.OrderedMap[string, string]){
+    profileClusters := make(map[string]*orderedmap.OrderedMap[string, string])
     var wg sync.WaitGroup
     for _, profile := range profiles {
         wg.Add(1)
