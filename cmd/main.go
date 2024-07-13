@@ -1,23 +1,27 @@
 package main
 
 import (
-    "sync"
-    "log"
+	"flag"
+	"log"
+	"sync"
 
-    "github.com/gdamore/tcell/v2"
-    "github.com/rivo/tview"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 
-    "github.com/phdah/lazydbrix/internal/databricks"
-    "github.com/phdah/lazydbrix/internal/keymaps"
-    "github.com/phdah/lazydbrix/internal/tui"
-    "github.com/phdah/lazydbrix/internal/utils"
+	"github.com/phdah/lazydbrix/internal/databricks"
+	"github.com/phdah/lazydbrix/internal/keymaps"
+	"github.com/phdah/lazydbrix/internal/tui"
+	"github.com/phdah/lazydbrix/internal/utils"
 )
 
 func main() {
+    // Input flags
+    debug := flag.Bool("debug", false, "(bool) Flag to run in debug. Default as false")
+
+    flag.Parse()
     // Variable declaration
     configPath := "~/.databrickscfg"
     profiles := utils.GetProfiles(configPath)
-    // profiles := []string{"prod", "test"}
     currentProfile := profiles[0]
     var mu sync.Mutex
 
@@ -46,9 +50,12 @@ func main() {
         AddItem(clusterList, 0, 1, false)
 
     // Create a right Flex
-    rightFlex := tview.NewFlex().SetDirection(tview.FlexRow).
-        AddItem(prevText, 0, 1, true).
-        AddItem(logs, 0, 3, false)
+    rightFlex := tview.NewFlex().SetDirection(tview.FlexRow)
+    rightFlex.AddItem(prevText, 0, 1, true)
+
+    if *debug == true {
+        rightFlex.AddItem(logs, 0, 3, false)
+    }
 
     mainFlex := tview.NewFlex().
         SetDirection(tview.FlexColumn).
