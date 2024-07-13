@@ -62,9 +62,5 @@ func UpdateClusterList(mu *sync.Mutex, app *tview.Application, profile *string, 
                 clusterList.AddItem(c.Key, "", 0, nil)
             }
         log.Printf("UpdateClusterList, profile: %s. firstClusterID is %s", *profile, firstClusterID)
-        details, _ := databricks.GetClusterDetails(profile, firstClusterID)
-        app.QueueUpdateDraw(func() {
-            prevText.SetText(databricks.FormatClusterDetails(details))
-        })
     }()
 }
