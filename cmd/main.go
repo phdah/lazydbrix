@@ -69,7 +69,11 @@ func main() {
         AddText("www.github.com/phdah/lazydbrix", false, tview.AlignRight, tcell.ColorGreen)
 
     // Set the keymaps
-    keymaps.SetKeymaps(app, mainFlex, leftFlex, rightFlex, envList, clusterList, prevText, logs)
+    keymaps.SetListKeymaps(envList)
+    keymaps.SetListKeymaps(clusterList)
+    keymaps.SetFlexKeymaps(app, leftFlex)
+    keymaps.SetFlexKeymaps(app, rightFlex)
+    keymaps.SetMainFlexKeymaps(app, mainFlex)
 
     // Set the root and run the application
     if err := app.SetRoot(frame, true).SetFocus(envList).Run(); err != nil {

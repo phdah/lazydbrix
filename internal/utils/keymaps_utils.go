@@ -43,21 +43,21 @@ func MoveFlexItemDown(app *tview.Application, flex *tview.Flex) {
 }
 
 // Helper functions to move focus left and right in the flex
-func MoveFlexRight(app *tview.Application, mainFlex *tview.Flex) {
-    for i := 0; i < mainFlex.GetItemCount(); i++ {
-        item := mainFlex.GetItem(i)
-        if item.HasFocus() && i < mainFlex.GetItemCount()-1 {
-            app.SetFocus(mainFlex.GetItem(i + 1))
+func MoveFlexRight(app *tview.Application, flex *tview.Flex) {
+    for i := 0; i < flex.GetItemCount(); i++ {
+        item := flex.GetItem(i)
+        if item.HasFocus() && i < flex.GetItemCount()-1 {
+            app.SetFocus(flex.GetItem(i + 1))
             break
         }
     }
 }
 
-func MoveFlexLeft(app *tview.Application, mainFlex *tview.Flex) {
-    for i := 0; i < mainFlex.GetItemCount(); i++ {
-        item := mainFlex.GetItem(i)
+func MoveFlexLeft(app *tview.Application, flex *tview.Flex) {
+    for i := 0; i < flex.GetItemCount(); i++ {
+        item := flex.GetItem(i)
         if item.HasFocus() && i > 0 {
-            app.SetFocus(mainFlex.GetItem(i - 1))
+            app.SetFocus(flex.GetItem(i - 1))
             break
         }
     }
