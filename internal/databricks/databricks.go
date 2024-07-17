@@ -26,27 +26,25 @@ type ClusterInfo struct {
 }
 
 // GetClusterNames fetches all cluster names and IDs from the specified profile.
-func GetClusterNames(profile string) (*orderedmap.OrderedMap[string, string], *orderedmap.OrderedMap[string, string], error) {
+func GetClusterNames(profile string) (*orderedmap.OrderedMap[string, string]) {
 	w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
 		Profile: profile,
 	}))
 
 	all, err := w.Clusters.ListAll(context.Background(), compute.ListClustersRequest{})
 	if err != nil {
-		return nil, nil, err
+		log.Panicf("Failed to fetch clusters using profile '%s': %v\n\n[Suggestion: check your VPN]", profile, err)
 	}
 
 	nameToIDMap := orderedmap.NewOrderedMap[string, string]()
-	idToNameMap := orderedmap.NewOrderedMap[string, string]()
 	for _, c := range all {
 		if strings.HasPrefix(c.ClusterName, "job-") {
 			continue
 		}
 		nameToIDMap.Set(c.ClusterName, c.ClusterId)
-		idToNameMap.Set(c.ClusterId, c.ClusterName)
 	}
 
-	return nameToIDMap, idToNameMap, nil
+	return nameToIDMap
 }
 
 func GetAllEnvClusters(mu *sync.Mutex, profiles []string) map[string]*orderedmap.OrderedMap[string, string] {
@@ -56,10 +54,7 @@ func GetAllEnvClusters(mu *sync.Mutex, profiles []string) map[string]*orderedmap
 		wg.Add(1)
 		go func(profile string) {
 			defer wg.Done()
-			nameToIDMap, _, err := GetClusterNames(profile)
-			if err != nil {
-				log.Printf("Failed to fetch clusters for profile %s: %v", profile, err)
-			}
+			nameToIDMap := GetClusterNames(profile)
 			mu.Lock()
 			profileClusters[profile] = nameToIDMap
 			mu.Unlock()

@@ -8,6 +8,7 @@ import (
 
 	"github.com/elliotchance/orderedmap/v2"
 	"github.com/phdah/lazydbrix/internal/databricks"
+	"github.com/phdah/lazydbrix/internal/utils"
 )
 
 func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, allNameToIDMap map[string]*orderedmap.OrderedMap[string, string], prevText *tview.TextView) *tview.List {
@@ -24,10 +25,11 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 
 	// Set a function to update the preview text view when the highlighted item changes
 	clusterList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		log.Printf("->clusterList: profile %s, cluster %s", *profile, mainText)
+        mainTextUncolored := utils.StripColor(mainText)
+		log.Printf("->clusterList: profile %s, cluster %s", *profile, mainTextUncolored)
 		go func() {
 			nameToIDMap = allNameToIDMap[*profile]
-			clusterID := nameToIDMap.GetElement(mainText).Value
+			clusterID := nameToIDMap.GetElement(mainTextUncolored).Value
 			details, err := databricks.GetClusterDetails(profile, clusterID)
 			if err != nil {
 				log.Printf("Failed to fetch cluster details: %v", err)

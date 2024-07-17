@@ -19,6 +19,9 @@ func SetListKeymaps(list *tview.List) {
 				utils.MoveListUp(list)
 				return nil
 			}
+        case tcell.KeyEnter:
+            utils.MakeListSelection(list)
+            return nil
 		}
 		return event
 	})

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/rivo/tview"
 )
 
@@ -17,6 +19,15 @@ func MoveListUp(list *tview.List) {
 	if currentItem > 0 {
 		list.SetCurrentItem(currentItem - 1)
 	}
+}
+
+// Helper function to make selections in a list
+func MakeListSelection(list *tview.List) {
+	index := list.GetCurrentItem()
+	itemFirstText, itemSecondText := list.GetItemText(index)
+
+	coloredItemFirstText := fmt.Sprintf("[green]%s", itemFirstText)
+	list.SetItemText(index, coloredItemFirstText, itemSecondText)
 }
 
 // Helper functions to move focus up and down in the flex

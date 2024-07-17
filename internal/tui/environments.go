@@ -1,10 +1,10 @@
 package tui
 
 import (
-	"log"
 	"sync"
 
 	"github.com/elliotchance/orderedmap/v2"
+	"github.com/phdah/lazydbrix/internal/utils"
 	"github.com/rivo/tview"
 )
 
@@ -16,12 +16,11 @@ func EnvListSetup(mu *sync.Mutex, profile *string, app *tview.Application, profi
 
 	// Set a function to update the cluster list when the highlighted profile changes
 	envList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-		log.Printf("Updateing %s to %s", *profile, mainText)
-		*profile = mainText
+		mainTextUncolored := utils.StripColor(mainText)
+		*profile = mainTextUncolored
 		mu.Lock()
 		nameToIDMap := allNameToIDMap[*profile]
 		mu.Unlock()
-		log.Printf("New nameToIdMap[%s]", *profile)
 		UpdateClusterList(mu, app, profile, clusterList, nameToIDMap, prevText)
 	})
 	envList.SetBorder(true).SetTitle("Workspaces")
