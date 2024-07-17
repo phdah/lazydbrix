@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"sync"
 
@@ -79,4 +80,9 @@ func main() {
 	if err := app.SetRoot(frame, true).SetFocus(envList).Run(); err != nil {
 		panic(err)
 	}
+
+	envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
+	clusterMainText, _ := clusterList.GetItemText(clusterList.GetCurrentItem())
+
+	fmt.Printf("\n\n{\"PROFILE\": \"%s\", \"CLUSTER_ID\": \"%s\"}", envMainText, clusterMainText)
 }
