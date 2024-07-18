@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 
 	"github.com/gdamore/tcell/v2"
@@ -18,6 +19,7 @@ import (
 func main() {
 	// Input flags
 	debug := flag.Bool("debug", false, "(bool) Flag to run in debug. Default as false")
+	outputPath := flag.String("output", "", "(string) Path to file to which the cluster selection is written")
 
 	flag.Parse()
 	// Variable declaration
@@ -81,8 +83,20 @@ func main() {
 		panic(err)
 	}
 
-	envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
-	clusterMainText, _ := clusterList.GetItemText(clusterList.GetCurrentItem())
+	if *outputPath != "" {
+		envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
+		clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterList.GetCurrentItem())
+		clusterSelection := fmt.Sprintf("{\"PROFILE\": \"%s\", \"CLUSTER_NAME\": \"%s\", \"CLUSTER_ID\": \"%s\"}", envMainText, clusterMainText, clusterSecondaryText)
 
-	fmt.Printf("\n\n{\"PROFILE\": \"%s\", \"CLUSTER_ID\": \"%s\"}", envMainText, clusterMainText)
+		file, createErr := os.Create(*outputPath)
+		if createErr != nil {
+			fmt.Println("Error creating to file:", createErr)
+			return
+		}
+		_, writingErr := file.WriteString(clusterSelection)
+		if writingErr != nil {
+			fmt.Println("Error writing to file:", writingErr)
+		}
+		fmt.Println("Successfully updated cluster info in file:", *outputPath)
+	}
 }

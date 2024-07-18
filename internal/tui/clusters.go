@@ -13,6 +13,7 @@ import (
 
 func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, allNameToIDMap map[string]*orderedmap.OrderedMap[string, string], prevText *tview.TextView) *tview.List {
 	clusterList := tview.NewList()
+	clusterList.ShowSecondaryText(false)
 	nameToIDMap := allNameToIDMap[*profile]
 
 	var firstClusterID string
@@ -20,7 +21,7 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 		if firstClusterID == "" {
 			firstClusterID = c.Value
 		}
-		clusterList.AddItem(c.Key, "", 0, nil)
+		clusterList.AddItem(c.Key, c.Value, 0, nil)
 	}
 
 	// Set a function to update the preview text view when the highlighted item changes
@@ -61,7 +62,7 @@ func UpdateClusterList(mu *sync.Mutex, app *tview.Application, profile *string, 
 			if firstClusterID == "" {
 				firstClusterID = c.Value
 			}
-			clusterList.AddItem(c.Key, "", 0, nil)
+			clusterList.AddItem(c.Key, c.Value, 0, nil)
 		}
 		log.Printf("UpdateClusterList, profile: %s. firstClusterID is %s", *profile, firstClusterID)
 	}()
