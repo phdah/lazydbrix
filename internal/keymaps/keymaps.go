@@ -1,52 +1,61 @@
 package keymaps
 
 import (
-    "github.com/gdamore/tcell/v2"
-    "github.com/rivo/tview"
-    "github.com/phdah/lazydbrix/internal/utils"
+	"github.com/gdamore/tcell/v2"
+	"github.com/phdah/lazydbrix/internal/utils"
+	"github.com/rivo/tview"
 )
 
-func SetKeymaps(app *tview.Application, mainFlex *tview.Flex, leftFlex, rightFlex *tview.Flex, envList, clusterList *tview.List, prevBox *tview.TextView, logs *tview.TextView) {
-    app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-        switch event.Key() {
-        case tcell.KeyTab: // Handle Tab key
-            utils.MoveFlexRight(app, mainFlex)
+// Set keymaps for a tview.List
+func SetListKeymaps(list *tview.List) {
+	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'j':
+				utils.MoveListDown(list)
+				return nil
+			case 'k':
+				utils.MoveListUp(list)
+				return nil
+			}
+        case tcell.KeyEnter:
+            utils.MakeListSelection(list)
             return nil
-        case tcell.KeyBacktab: // Handle Shift+Tab key
-            utils.MoveFlexLeft(app, mainFlex)
-            return nil
-        case tcell.KeyRune: // Handle 'j', 'k', 'h', 'l' using Rune
-            switch event.Rune() {
-            case 'j': // Move down in the list
-                if app.GetFocus() == envList {
-                    utils.MoveListDown(envList)
-                } else if app.GetFocus() == clusterList {
-                    utils.MoveListDown(clusterList)
-                }
-                return nil
-            case 'k': // Move up in the list
-                if app.GetFocus() == envList {
-                    utils.MoveListUp(envList)
-                } else if app.GetFocus() == clusterList {
-                    utils.MoveListUp(clusterList)
-                }
-                return nil
-            case 'h': // Move focus to the list underneath in the flex
-                if app.GetFocus() == rightFlex || app.GetFocus() == prevBox || app.GetFocus() == logs {
-                    utils.MoveFlexItemUp(app, rightFlex)
-                } else if app.GetFocus() == leftFlex || app.GetFocus() == envList || app.GetFocus() == clusterList {
-                    utils.MoveFlexItemUp(app, leftFlex)
-                }
-                return nil
-            case 'l': // Move focus to the list above in the flex
-                if app.GetFocus() == rightFlex || app.GetFocus() == prevBox || app.GetFocus() == logs{
-                    utils.MoveFlexItemDown(app, rightFlex)
-                } else if app.GetFocus() == leftFlex || app.GetFocus() == envList || app.GetFocus() == clusterList {
-                    utils.MoveFlexItemDown(app, leftFlex)
-                }
-                return nil
-            }
-        }
-        return event // Forward to other handlers
-    })
+		}
+		return event
+	})
+}
+
+// Set keymaps for a tview.Flex
+func SetFlexKeymaps(app *tview.Application, flex *tview.Flex) {
+	flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'h':
+				utils.MoveFlexItemUp(app, flex)
+				return nil
+			case 'l':
+				utils.MoveFlexItemDown(app, flex)
+				return nil
+			}
+		}
+		return event
+	})
+}
+
+// Set keymaps for the main tview.Flex
+func SetMainFlexKeymaps(app *tview.Application, flex *tview.Flex) {
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTab:
+			utils.MoveFlexRight(app, flex)
+			return nil
+		case tcell.KeyBacktab:
+			utils.MoveFlexLeft(app, flex)
+			return nil
+		}
+		return event
+	})
 }
