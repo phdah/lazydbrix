@@ -1,53 +1,70 @@
-local Terminal = require('toggleterm.terminal').Terminal
+local install = require("install")
+local utils = require("utils")
 
 -- Global variable to store the last output
 local M = {}
 
 -- Lazydbrix class definition
-local Lazydbrix = setmetatable({}, {__index = Terminal})
+local Lazydbrix = {}
 Lazydbrix.__index = Lazydbrix
 
 -- Constructor for Lazydbrix
-function Lazydbrix.newLazydbrix(opts, terminalOpts)
+function Lazydbrix.newLazydbrix(opts)
     opts = opts or {}
-    local self = setmetatable(Terminal:new(terminalOpts), Lazydbrix)
-    self.cmd = opts.cmd or ""
-    self.lazydbrixClusterSelectionStr = ""
-    self.lazydbrixClusterSelectionTbl = {}
+    local self = setmetatable({}, Lazydbrix)
+    self.cmd = opts.cmd
+    self.file = opts.file
+    self.bin = opts.bin
+    self.clustyerSelectionTbl = self:getClusterSelections()
     return self
 end
 
--- Method to handle stdout
-function Lazydbrix:onLazydbrixStdout(_, _, data, _)
-    for _, line in ipairs(data) do
-        if line ~= "" then self.lazydbrixClusterSelectionStr = line end
-    end
-end
-
-function Lazydbrix:decodeJSON()
-    local success, result = pcall(vim.fn.json_decode,
-                                  self.lazydbrixClusterSelectionStr)
-    if success then
-        self.lazydbrixClusterSelectionTbl = result
-    end
+function Lazydbrix:getClusterSelections()
+    return {
+        profile = vim.fn.getenv("PROFILE"),
+        clusterName = vim.fn.getenv("CLUSTER_NAME"),
+        clusterID = vim.fn.getenv("CLUSTER_ID")
+    }
 end
 
 -- Function to print the cluster selection
 function Lazydbrix:printClusterSelection()
-    print(vim.inspect(Lazydbrix.lazydbrixClusterSelectionTbl))
+    print(vim.inspect(self.clustyerSelectionTbl))
+end
+
+-- Function to install lazydbrix
+function Lazydbrix:install()
+    install.exec()
+end
+
+-- Function to open Floaterm with the command
+function Lazydbrix:open()
+    if not self.bin then
+        utils.log_error("No command specified for Lazydbrix")
+        return
+    end
+    local term_cmd = string.format(":FloatermNew --width=0.9 --height=0.9 %s -nvim %s", self.bin, self.file)
+    vim.cmd(term_cmd)
+
+    -- Autocommand to source the output file on closing
+    vim.api.nvim_create_autocmd("TermClose", {
+        desc =
+[[Source the Databricks environmental variables
+from the output file, at terminal close event]],
+        once = true,
+        callback = function()
+            vim.cmd(":source " .. self.file)
+        end
+    })
 end
 
 -- Create an instance of Lazydbrix
 local lazydbrix = Lazydbrix.newLazydbrix({
-    cmd = "~/repos/privat/lazydbrix/bin/lazydbrix"
-}, {
-    direction = "float",
-    on_stdout = function(term, job, data, name)
-        Lazydbrix:onLazydbrixStdout(term, job, data, name)
-        Lazydbrix:decodeJSON()
-    end
+    cmd = install.bin(),
+    file = install.file(),
+    bin = install.bin()
 })
 
-M.Lazydbrix = lazydbrix
+M.lazydbrix = lazydbrix
 
 return M
