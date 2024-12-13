@@ -16,6 +16,7 @@ function Lazydbrix.newLazydbrix(opts)
     self.file = opts.file
     self.bin = opts.bin
     self.clustyerSelectionTbl = self:getClusterSelections()
+    self.dependencies = opts.dependencies or { "go", "make"}
     return self
 end
 
@@ -34,7 +35,7 @@ end
 
 -- Function to install lazydbrix
 function Lazydbrix:install()
-    install.exec()
+    install.exec(self.dependencies)
 end
 
 -- Function to open Floaterm with the command

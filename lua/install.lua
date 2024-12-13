@@ -1,19 +1,15 @@
 local utils = require("utils")
 local M = {}
 
+-- TODO: Figure out how to not be dependent on lazy
 ---@return string _ path to package manager dir
-function M.source_path()
-return "~/repos/privat/lazydbrix" end
--- return vim.fn.stdpath("data") .. "/lazy/lazydbrix" end
+function M.source_path() return vim.fn.stdpath("data") .. "/lazy/lazydbrix" end
 
 ---@return string _ path to install dir
-function M.dir()
-return vim.fn.stdpath("data") .. "/lazydbrix" end
+function M.dir() return vim.fn.stdpath("data") .. "/lazydbrix" end
 
 ---@return string _ path to binary
-function M.bin()
-return M.source_path() .. "/bin/lazydbrix" end
--- return M.dir() .. "/bin" end
+function M.bin() return M.dir() .. "/lazydbrix" end
 
 ---@return string _ path to output file
 function M.output() return vim.fn.stdpath("cache") .. "/lazydbrix" end
@@ -36,48 +32,102 @@ local run_job = function(job)
     local cmd = job.cmd
     local args = job.args or {}
 
-    utils.log_info("Running command: " .. cmd .. " " .. table.concat(args, " "))
+    utils.log_debug("Running command: " .. cmd .. " " .. table.concat(args, " "))
 
-    -- Create a new job for running the CLI tool
-    local run = vim.fn.jobstart({cmd, unpack(args)}, {
-        stdout_buffered = true,
-        stderr_buffered = true,
-        on_exit = function(_, exit_code)
-            if exit_code == 0 then
-                utils.log_info("Command completed successfully")
-            else
-                utils.log_error("Command exited with code: " .. exit_code)
-            end
-        end,
-        on_stdout = function(_, data)
-            if data then
-                utils.log_info("Output: " .. table.concat(data, "\n"))
-            end
-        end,
-        on_stderr = function(_, data)
-            if data then
-                utils.log_error("Error: " .. table.concat(data, "\n"))
-            end
-        end,
-    })
+    -- Create pipes for stdout and stderr
+    local uv = vim.loop
+    local stdout = uv.new_pipe(false)
+    local stderr = uv.new_pipe(false)
 
-    if run == 0 then
+    -- Start the process
+    handle, pid = uv.spawn(cmd, {args = args, stdio = {nil, stdout, stderr}},
+                           function(exit_code, signal)
+        -- Cleanup after the process exits
+        handle:close()
+        stdout:close()
+        stderr:close()
+
+        if exit_code == 0 then
+            utils.log_info("Command completed successfully")
+        else
+            utils.log_error("Command exited with code: " .. exit_code ..
+                                " and signal: " .. signal)
+        end
+    end)
+
+    if not handle then
         utils.log_error("Failed to start job: " .. cmd)
+        return
     end
+
+    utils.log_debug("Process started with PID: " .. pid)
+
+    -- Capture stdout
+    stdout:read_start(function(err, data)
+        if err then
+            utils.log_error("Error reading stdout: " .. err)
+        elseif data then
+            utils.log_info("Job run output: " .. data)
+        end
+    end)
+
+    -- Capture stderr
+    stderr:read_start(function(err, data)
+        if err then
+            utils.log_error("Error reading stderr: " .. err)
+        elseif data then
+            utils.log_error("Error output: " .. data)
+        end
+    end)
 end
 
-function M.exec()
-    local installBinary = M.dir()
-    vim.fn.mkdir(installBinary, "p")
+---@brief Verify if a binary is installed
+---@param binary string The name of the binary to check
+---@return string|nil The path to the binary if found, or nil if not found
+local varifyBin = function(binary)
+    local cmd = "which " .. binary .. " 2>/dev/null" -- Suppress stderr to keep output clean
+    local handle = io.popen(cmd)
+    if not handle then return nil end
+
+    local result = handle:read("*all")
+    handle:close()
+
+    -- Trim trailing newline and return the result, or nil if not found
+    result = result and result:gsub("\n$", "") or nil
+    if result == "" then return nil end
+    return result
+end
+
+---@brief Run binary verification for all dependencies
+M.runVarifyBin = function(dependencies)
+    local successfully = true
+    for _, binary in ipairs(dependencies) do
+        local path = varifyBin(binary)
+        if path then
+            utils.log_info(binary .. " is installed at: " .. path)
+        else
+            utils.log_error(binary .. " is not installed or not in PATH.")
+            successfully = false
+        end
+    end
+    return successfully
+end
+
+function M.exec(dependencies)
+    local allInstalled = M.runVarifyBin(dependencies)
+    if not allInstalled then
+        utils.log_error("Stopping lazydbrix install")
+        return
+    end
+    vim.fn.mkdir(M.dir(), "p")
     vim.fn.mkdir(M.output(), "p")
 
-    -- Define the job details
     local job = {
-        cmd = "go",
-        args = {"build", "-o", installBinary, M.source_path()},
+        cmd = "make",
+        args = {"-C", M.source_path(), "build", "BIN=" .. M.bin()}
     }
 
-    utils.log_info("Installing lazydbrix with: " .. vim.inspect(job))
+    utils.log_debug("Installing lazydbrix with: " .. vim.inspect(job))
 
     run_job(job)
 end

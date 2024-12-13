@@ -1,2 +1,7 @@
+BIN := bin/lazydbrix
+
 build:
-	go build -o bin/lazydbrix cmd/main.go
+	go build -o $(BIN) cmd/main.go
+
+clean:
+	rm $(BIN) || echo "No bin exists"
