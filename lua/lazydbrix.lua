@@ -31,17 +31,16 @@ end
 
 function Lazydbrix:setClusterSelections()
     self.clustyerSelectionTbl = self:getClusterSelections()
+    self:notifyClusterSelection()
 end
 
--- Function to print the cluster selection
-function Lazydbrix:printClusterSelection()
-    print(vim.inspect(self.clustyerSelectionTbl))
+-- Function to notify the cluster selection
+function Lazydbrix:notifyClusterSelection()
+    utils.log_info("Cluster selected:\n" .. vim.inspect(self.clustyerSelectionTbl))
 end
 
 -- Function to install lazydbrix
-function Lazydbrix:install()
-    install.exec(self.dependencies)
-end
+function Lazydbrix:install() install.exec(self.dependencies) end
 
 -- Function to open Floaterm with the command
 function Lazydbrix:open()
@@ -49,13 +48,14 @@ function Lazydbrix:open()
         utils.log_error("No command specified for Lazydbrix")
         return
     end
-    local term_cmd = string.format(":FloatermNew --width=0.9 --height=0.9 %s -nvim %s", self.bin, self.file)
+    local term_cmd = string.format(
+                         ":FloatermNew --width=0.9 --height=0.9 %s -nvim %s",
+                         self.bin, self.file)
     vim.cmd(term_cmd)
 
     -- Autocommand to source the output file on closing
     vim.api.nvim_create_autocmd("TermClose", {
-        desc =
-[[Source the Databricks environmental variables
+        desc = [[Source the Databricks environmental variables
 from the output file, at terminal close event]],
         once = true,
         callback = function()
@@ -70,7 +70,7 @@ local lazydbrix = Lazydbrix.newLazydbrix({
     cmd = install.bin(),
     file = install.file(),
     bin = install.bin(),
-    dependencies = { "go", "make"}
+    dependencies = {"go", "make"}
 })
 
 M.lazydbrix = lazydbrix
