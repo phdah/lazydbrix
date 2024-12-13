@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gdamore/tcell/v2"
@@ -19,7 +20,7 @@ import (
 func main() {
 	// Input flags
 	debug := flag.Bool("debug", false, "(bool) Flag to run in debug. Default as false")
-	outputPath := flag.String("output", "", "(string) Path to file to which the cluster selection is written")
+	outputPath := flag.String("nvim", "", "(string) Path to file to which the cluster selection is written")
 
 	flag.Parse()
 	// Variable declaration
@@ -86,7 +87,10 @@ func main() {
 	if *outputPath != "" {
 		envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
 		clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterList.GetCurrentItem())
-		clusterSelection := fmt.Sprintf("{\"PROFILE\": \"%s\", \"CLUSTER_NAME\": \"%s\", \"CLUSTER_ID\": \"%s\"}", envMainText, clusterMainText, clusterSecondaryText)
+        // TODO: for now, we simply split the tring of the color code.
+        // This should be solved more cleanly later
+        clusterMainTextStriped := clusterMainText[strings.Index(clusterMainText, "]")+1:]
+		clusterSelection := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", envMainText, clusterMainTextStriped, clusterSecondaryText)
 
 		file, createErr := os.Create(*outputPath)
 		if createErr != nil {
