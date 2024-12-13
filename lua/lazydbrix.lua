@@ -16,7 +16,7 @@ function Lazydbrix.newLazydbrix(opts)
     self.file = opts.file
     self.bin = opts.bin
     self.clustyerSelectionTbl = self:getClusterSelections()
-    self.dependencies = opts.dependencies or { "go", "make"}
+    self.dependencies = opts.dependencies
     return self
 end
 
@@ -55,6 +55,7 @@ from the output file, at terminal close event]],
         once = true,
         callback = function()
             vim.cmd(":source " .. self.file)
+            self:getClusterSelections()
         end
     })
 end
@@ -63,7 +64,8 @@ end
 local lazydbrix = Lazydbrix.newLazydbrix({
     cmd = install.bin(),
     file = install.file(),
-    bin = install.bin()
+    bin = install.bin(),
+    dependencies = { "go", "make"}
 })
 
 M.lazydbrix = lazydbrix
