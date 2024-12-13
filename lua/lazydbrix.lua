@@ -15,8 +15,9 @@ function Lazydbrix.newLazydbrix(opts)
     self.cmd = opts.cmd
     self.file = opts.file
     self.bin = opts.bin
-    self.clustyerSelectionTbl = self:getClusterSelections()
     self.dependencies = opts.dependencies
+
+    self.clustyerSelectionTbl = {}
     return self
 end
 
@@ -26,6 +27,10 @@ function Lazydbrix:getClusterSelections()
         clusterName = vim.fn.getenv("CLUSTER_NAME"),
         clusterID = vim.fn.getenv("CLUSTER_ID")
     }
+end
+
+function Lazydbrix:setClusterSelections()
+    self.clustyerSelectionTbl = self:getClusterSelections()
 end
 
 -- Function to print the cluster selection
@@ -55,7 +60,7 @@ from the output file, at terminal close event]],
         once = true,
         callback = function()
             vim.cmd(":source " .. self.file)
-            self:getClusterSelections()
+            self:setClusterSelections()
         end
     })
 end
