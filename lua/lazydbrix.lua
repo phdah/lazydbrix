@@ -1,26 +1,31 @@
 local install = require("install")
 local utils = require("utils")
 
--- Global variable to store the last output
+--- Global variable to store the module
 local M = {}
 
--- Lazydbrix class definition
+--- Lazydbrix class definition
 local Lazydbrix = {}
 Lazydbrix.__index = Lazydbrix
 
--- Constructor for Lazydbrix
+--- Constructor for Lazydbrix
+---@param opts table options to use
+---@return metatable Lazydbrix instance of a Lazydbrix
 function Lazydbrix.newLazydbrix(opts)
     opts = opts or {}
     local self = setmetatable({}, Lazydbrix)
-    self.cmd = opts.cmd
+
+    self.dependencies = opts.dependencies
     self.file = opts.file
     self.bin = opts.bin
-    self.dependencies = opts.dependencies
+    self.source = opts.source
 
     self.clustyerSelectionTbl = {}
     return self
 end
 
+--- Get the environmental variables for cluster selection
+---@return table _ with profile, clusterName and clusterID
 function Lazydbrix:getClusterSelections()
     return {
         profile = vim.fn.getenv("PROFILE"),
@@ -29,20 +34,40 @@ function Lazydbrix:getClusterSelections()
     }
 end
 
+--- Set the environmental variables for cluster selection as an attribute
+--- in the Lazydbrix instance
 function Lazydbrix:setClusterSelections()
     self.clustyerSelectionTbl = self:getClusterSelections()
     self:notifyClusterSelection()
 end
 
--- Function to notify the cluster selection
+--- Function to notify the cluster selection
 function Lazydbrix:notifyClusterSelection()
-    utils.log_info("Cluster selected:\n" .. vim.inspect(self.clustyerSelectionTbl))
+    utils.log_info("Cluster selected:\n" ..
+                       vim.inspect(self.clustyerSelectionTbl))
 end
 
--- Function to install lazydbrix
-function Lazydbrix:install() install.exec(self.dependencies) end
+--- Function to install lazydbrix
+function Lazydbrix:install()
+    local allInstalled = install.runVarifyBin(self.dependencies)
+    if not allInstalled then
+        utils.log_error("Stopping lazydbrix install")
+        return
+    end
 
--- Function to open Floaterm with the command
+    utils.log_debug("All dependencies exists")
+    install.exec(self.source)
+
+    local lazydbrixInstalled  = install.runVarifyBin({self.source})
+    if not lazydbrixInstalled  then
+        utils.log_error("Installation of lazydbrix was not successfully!")
+    else
+        utils.log_info("Installation of lazydbrix was successfully, dbrix away!")
+    end
+end
+
+--- Function to open Floaterm with the command
+---@return nil
 function Lazydbrix:open()
     if not self.bin then
         utils.log_error("No command specified for Lazydbrix")
@@ -67,10 +92,10 @@ end
 
 -- Create an instance of Lazydbrix
 local lazydbrix = Lazydbrix.newLazydbrix({
-    cmd = install.bin(),
+    dependencies = {"go"},
     file = install.file(),
     bin = install.bin(),
-    dependencies = {"go", "make"}
+    source = "github.com/phdah/lazydbrix/cmd/lazydbrix@latest"
 })
 
 M.lazydbrix = lazydbrix
