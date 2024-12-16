@@ -87,9 +87,9 @@ func main() {
 	if *outputPath != "" {
 		envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
 		clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterList.GetCurrentItem())
-        // TODO: for now, we simply split the tring of the color code.
-        // This should be solved more cleanly later
-        clusterMainTextStriped := clusterMainText[strings.Index(clusterMainText, "]")+1:]
+		// TODO: for now, we simply split the tring of the color code.
+		// This should be solved more cleanly later
+		clusterMainTextStriped := clusterMainText[strings.Index(clusterMainText, "]")+1:]
 		clusterSelection := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", envMainText, clusterMainTextStriped, clusterSecondaryText)
 
 		file, createErr := os.Create(*outputPath)

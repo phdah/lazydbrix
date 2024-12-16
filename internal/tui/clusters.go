@@ -26,7 +26,7 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 
 	// Set a function to update the preview text view when the highlighted item changes
 	clusterList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
-        mainTextUncolored := utils.StripColor(mainText)
+		mainTextUncolored := utils.StripColor(mainText)
 		log.Printf("->clusterList: profile %s, cluster %s", *profile, mainTextUncolored)
 		go func() {
 			nameToIDMap = allNameToIDMap[*profile]

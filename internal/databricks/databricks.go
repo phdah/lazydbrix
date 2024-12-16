@@ -26,7 +26,7 @@ type ClusterInfo struct {
 }
 
 // GetClusterNames fetches all cluster names and IDs from the specified profile.
-func GetClusterNames(profile string) (*orderedmap.OrderedMap[string, string]) {
+func GetClusterNames(profile string) *orderedmap.OrderedMap[string, string] {
 	w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
 		Profile: profile,
 	}))
