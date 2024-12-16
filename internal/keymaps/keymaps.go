@@ -80,6 +80,32 @@ func SetClusterKeymaps(envList *tview.List, clusterList *tview.List, clusterSele
 	})
 }
 
+// Set keymaps for a tview.List
+func SetListKeymapsClusters(env *tview.List, list *tview.List) {
+	originalCapture := list.GetInputCapture() // Save the existing input capture, if any
+
+	list.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Call the original input capture first
+		if originalCapture != nil {
+			event = originalCapture(event)
+			if event == nil {
+				return nil // If original capture handled the event, exit
+			}
+		}
+
+		// Add new keymaps
+		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 's':
+				utils.ToggleCluster(env, list)
+				return nil
+			}
+		}
+		return event
+	})
+}
+
 // Set keymaps for a tview.Flex
 func SetFlexKeymaps(app *tview.Application, flex *tview.Flex) {
 	flex.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

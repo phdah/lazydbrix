@@ -37,7 +37,7 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 		go func() {
 			nameToIDMap = allNameToIDMap[*profile]
 			clusterID := nameToIDMap.GetElement(mainTextUncolored).Value
-			details, err := databricks.GetClusterDetails(profile, clusterID)
+			details, _, err := databricks.GetClusterDetails(profile, clusterID)
 			if err != nil {
 				log.Printf("Failed to fetch cluster details: %v", err)
 			}
@@ -51,7 +51,10 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 
 	clusterList.SetBorder(true).SetTitle("Clusters")
 
-	details, _ := databricks.GetClusterDetails(profile, firstClusterID)
+	details, _, err := databricks.GetClusterDetails(profile, firstClusterID)
+    if err != nil {
+        log.Fatalf("Failed to get cluster details: %v", err)
+    }
 	prevText.SetText(databricks.FormatClusterDetails(details))
 
 	return clusterList

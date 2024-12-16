@@ -79,6 +79,7 @@ func main() {
 	keymaps.SetGlobalKaymaps(app)
 	keymaps.SetEnvKeymaps(envList)
 	keymaps.SetClusterKeymaps(envList, clusterList, &clusterSelection)
+    keymaps.SetListKeymapsClusters(envList, clusterList)
 	keymaps.SetFlexKeymaps(app, leftFlex)
 	keymaps.SetFlexKeymaps(app, rightFlex)
 	keymaps.SetMainFlexKeymaps(app, mainFlex)
