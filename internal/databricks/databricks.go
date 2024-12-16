@@ -1,30 +1,30 @@
 package databricks
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "log"
-    "strings"
-    "sync"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+	"sync"
 
-    "github.com/databricks/databricks-sdk-go"
-    "github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 
-    "github.com/elliotchance/orderedmap/v2"
+	"github.com/elliotchance/orderedmap/v2"
 )
 
 // ClusterInfo contains only the desired fields from the cluster details.
 type ClusterInfo struct {
-    Profile                string
-    AutoterminationMinutes int               `json:"autotermination_minutes"`
-    ClusterID              string            `json:"cluster_id"`
-    ClusterName            string            `json:"cluster_name"`
-    DataSecurityMode       string            `json:"data_security_mode"`
-    DriverNodeTypeID       string            `json:"driver_node_type_id"`
-    SparkEnvVars           map[string]string `json:"spark_env_vars"`
-    StartTime              int64             `json:"start_time"`
-    State                  string            `json:"state"`
+	Profile                string
+	AutoterminationMinutes int               `json:"autotermination_minutes"`
+	ClusterID              string            `json:"cluster_id"`
+	ClusterName            string            `json:"cluster_name"`
+	DataSecurityMode       string            `json:"data_security_mode"`
+	DriverNodeTypeID       string            `json:"driver_node_type_id"`
+	SparkEnvVars           map[string]string `json:"spark_env_vars"`
+	StartTime              int64             `json:"start_time"`
+	State                  string            `json:"state"`
 }
 
 // GetClusterNames fetches all cluster names and IDs from the specified profile.
@@ -33,103 +33,103 @@ func GetClusterNames(profile string) *orderedmap.OrderedMap[string, string] {
 		Profile: profile,
 	}))
 
-    all, err := w.Clusters.ListAll(context.Background(), compute.ListClustersRequest{})
-    if err != nil {
-        log.Panicf("Failed to fetch clusters using profile '%s': %v\n\n[Suggestion: check your VPN]", profile, err)
-    }
+	all, err := w.Clusters.ListAll(context.Background(), compute.ListClustersRequest{})
+	if err != nil {
+		log.Panicf("Failed to fetch clusters using profile '%s': %v\n\n[Suggestion: check your VPN]", profile, err)
+	}
 
-    nameToIDMap := orderedmap.NewOrderedMap[string, string]()
-    for _, c := range all {
-        if strings.HasPrefix(c.ClusterName, "job-") {
-            continue
-        }
-        nameToIDMap.Set(c.ClusterName, c.ClusterId)
-    }
+	nameToIDMap := orderedmap.NewOrderedMap[string, string]()
+	for _, c := range all {
+		if strings.HasPrefix(c.ClusterName, "job-") {
+			continue
+		}
+		nameToIDMap.Set(c.ClusterName, c.ClusterId)
+	}
 
-    return nameToIDMap
+	return nameToIDMap
 }
 
 func GetAllEnvClusters(mu *sync.Mutex, profiles []string) map[string]*orderedmap.OrderedMap[string, string] {
-    profileClusters := make(map[string]*orderedmap.OrderedMap[string, string])
-    var wg sync.WaitGroup
-    for _, profile := range profiles {
-        wg.Add(1)
-        go func(profile string) {
-            defer wg.Done()
-            nameToIDMap := GetClusterNames(profile)
-            mu.Lock()
-            profileClusters[profile] = nameToIDMap
-            mu.Unlock()
-        }(profile)
-    }
-    wg.Wait()
+	profileClusters := make(map[string]*orderedmap.OrderedMap[string, string])
+	var wg sync.WaitGroup
+	for _, profile := range profiles {
+		wg.Add(1)
+		go func(profile string) {
+			defer wg.Done()
+			nameToIDMap := GetClusterNames(profile)
+			mu.Lock()
+			profileClusters[profile] = nameToIDMap
+			mu.Unlock()
+		}(profile)
+	}
+	wg.Wait()
 
-    return profileClusters
+	return profileClusters
 }
 
 // GetClusterDetails fetches detailed information about a specific cluster.
 func GetClusterDetails(profile *string, clusterID string) (*ClusterInfo, *databricks.WorkspaceClient, error) {
-    w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
-        Profile: *profile,
-    }))
+	w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
+		Profile: *profile,
+	}))
 
-    details, err := w.Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: clusterID})
-    if err != nil {
-        return &ClusterInfo{}, nil, err // this is not pickung up correct profile
-    }
+	details, err := w.Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: clusterID})
+	if err != nil {
+		return &ClusterInfo{}, nil, err // this is not pickung up correct profile
+	}
 
-    clusterInfo := &ClusterInfo{
-        Profile:                *profile,
-        AutoterminationMinutes: details.AutoterminationMinutes,
-        ClusterID:              details.ClusterId,
-        ClusterName:            details.ClusterName,
-        DataSecurityMode:       string(details.DataSecurityMode),
-        DriverNodeTypeID:       details.DataSecurityMode.String(),
-        SparkEnvVars:           details.SparkEnvVars,
-        StartTime:              details.StartTime,
-        State:                  string(details.State),
-    }
+	clusterInfo := &ClusterInfo{
+		Profile:                *profile,
+		AutoterminationMinutes: details.AutoterminationMinutes,
+		ClusterID:              details.ClusterId,
+		ClusterName:            details.ClusterName,
+		DataSecurityMode:       string(details.DataSecurityMode),
+		DriverNodeTypeID:       details.DataSecurityMode.String(),
+		SparkEnvVars:           details.SparkEnvVars,
+		StartTime:              details.StartTime,
+		State:                  string(details.State),
+	}
 
-    return clusterInfo, w, nil
+	return clusterInfo, w, nil
 }
 
 // DisplayClusterDetails formats and displays cluster details as JSON.
 func FormatClusterDetails(details *ClusterInfo) string {
-    jsonData, err := json.MarshalIndent(details, "", "    ")
-    if err != nil {
-        log.Fatalf("Failed to marshal cluster details: %v", err)
-    }
+	jsonData, err := json.MarshalIndent(details, "", "    ")
+	if err != nil {
+		log.Fatalf("Failed to marshal cluster details: %v", err)
+	}
 
-    return string(jsonData)
+	return string(jsonData)
 }
 
 // ToggleCluster starts or stops a cluster based on its current state.
 func ToggleCluster(profile *string, clusterName string, clusterID string) error {
-    // Get cluster details and workspace client
-    details, w, err := GetClusterDetails(profile, clusterID)
-    if err != nil {
-        return fmt.Errorf("failed to get cluster details for %s: %w", clusterName, err)
-    }
+	// Get cluster details and workspace client
+	details, w, err := GetClusterDetails(profile, clusterID)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster details for %s: %w", clusterName, err)
+	}
 
-    switch details.State {
-    case "TERMINATED", "PENDING":
-        _, err := w.Clusters.Start(context.Background(), compute.StartCluster{ClusterId: clusterID})
-        if err != nil {
-            log.Fatalf("failed to initiate starting for cluster %s: %s", clusterName, err)
-        }
-        log.Println("Cluster start initiated successfully.")
-    case "RUNNING":
-        // Call Delete to terminate the cluster
-        _, err := w.Clusters.Delete(context.Background(), compute.DeleteCluster{
-            ClusterId: clusterID,
-        })
-        if err != nil {
-            log.Fatalf("failed to initiate termination for cluster %s: %s", clusterName, err)
-        }
-        log.Println("Cluster termination initiated successfully.")
-    default:
-        log.Printf("cluster '%s' is in an unsupported state: %s", clusterName, details.State)
-    }
+	switch details.State {
+	case "TERMINATED", "PENDING":
+		_, err := w.Clusters.Start(context.Background(), compute.StartCluster{ClusterId: clusterID})
+		if err != nil {
+			log.Fatalf("failed to initiate starting for cluster %s: %s", clusterName, err)
+		}
+		log.Println("Cluster start initiated successfully.")
+	case "RUNNING":
+		// Call Delete to terminate the cluster
+		_, err := w.Clusters.Delete(context.Background(), compute.DeleteCluster{
+			ClusterId: clusterID,
+		})
+		if err != nil {
+			log.Fatalf("failed to initiate termination for cluster %s: %s", clusterName, err)
+		}
+		log.Println("Cluster termination initiated successfully.")
+	default:
+		log.Printf("cluster '%s' is in an unsupported state: %s", clusterName, details.State)
+	}
 
-    return nil
+	return nil
 }

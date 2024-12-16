@@ -52,9 +52,9 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 	clusterList.SetBorder(true).SetTitle("Clusters")
 
 	details, _, err := databricks.GetClusterDetails(profile, firstClusterID)
-    if err != nil {
-        log.Fatalf("Failed to get cluster details: %v", err)
-    }
+	if err != nil {
+		log.Fatalf("Failed to get cluster details: %v", err)
+	}
 	prevText.SetText(databricks.FormatClusterDetails(details))
 
 	return clusterList

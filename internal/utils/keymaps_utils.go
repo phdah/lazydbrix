@@ -24,12 +24,12 @@ func MoveListUp(list *tview.List) {
 
 func ToggleCluster(env *tview.List, list *tview.List) {
 	currentEnvItemIndex := env.GetCurrentItem()
-    _, envSecondaryText := env.GetItemText(currentEnvItemIndex)
+	_, envSecondaryText := env.GetItemText(currentEnvItemIndex)
 
 	currentItemIndex := list.GetCurrentItem()
-    clusterPrimaryText, clusterSecondaryText := list.GetItemText(currentItemIndex)
+	clusterPrimaryText, clusterSecondaryText := list.GetItemText(currentItemIndex)
 
-    databricks.ToggleCluster(&envSecondaryText, clusterPrimaryText, clusterSecondaryText)
+	databricks.ToggleCluster(&envSecondaryText, clusterPrimaryText, clusterSecondaryText)
 }
 
 // Helper function to make selections in a list
