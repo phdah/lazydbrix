@@ -99,7 +99,7 @@ These are all the available and default configurations (found in `defaults.lua`)
 ```lua
 {
     sourceOnStart = false, -- Boolean | source the output file on startup
-    dependencies = {"go"}, -- table | dependencies for running lazydbrix:install()
+    dependencies = {"go"}, -- table | dependencies for running install()
     branch = "main", -- string | which branch to install lazydrix binary from, usefull for debuggin
 
     -- Only change the delow if you know what you're doing

@@ -2,7 +2,7 @@ local install = require("install")
 
 return {
     sourceOnStart = false, -- Boolean | source the output file on startup
-    dependencies = {"go"}, -- table | dependencies for running lazydbrix:install()
+    dependencies = {"go"}, -- table | dependencies for running install()
     branch = "main", -- string | which branch to install lazydrix binary from
 
     -- Only change the delow if you know what you're doing
