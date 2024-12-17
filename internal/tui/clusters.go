@@ -11,6 +11,12 @@ import (
 	"github.com/phdah/lazydbrix/internal/utils"
 )
 
+type ClusterSelection struct {
+	Profile     string
+	ClusterID   string
+	ClusterName string
+}
+
 func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, allNameToIDMap map[string]*orderedmap.OrderedMap[string, string], prevText *tview.TextView) *tview.List {
 	clusterList := tview.NewList()
 	clusterList.ShowSecondaryText(false)

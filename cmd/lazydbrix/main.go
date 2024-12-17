@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/gdamore/tcell/v2"
@@ -69,12 +68,17 @@ func main() {
 	// Frame components
 	frame := tview.NewFrame(mainFlex).
 		AddText("lazydbrix", true, tview.AlignCenter, tcell.ColorGreen).
-		AddText("Lazily deal with Databricks", true, tview.AlignCenter, tcell.ColorWhite).
-		AddText("www.github.com/phdah/lazydbrix", false, tview.AlignRight, tcell.ColorGreen)
+		AddText("Lazily deal with Databricks clusters", true, tview.AlignCenter, tcell.ColorWhite).
+		AddText("www.github.com/phdah/lazydbrix", false, tview.AlignRight, tcell.ColorGreen).
+		AddText("Quit q | <enter> select", false, tview.AlignLeft, tcell.ColorBlue)
+
+	// Setup a cluster selection struct
+	clusterSelection := tui.ClusterSelection{}
 
 	// Set the keymaps
-	keymaps.SetListKeymaps(envList)
-	keymaps.SetListKeymaps(clusterList)
+	keymaps.SetGlobalKaymaps(app)
+	keymaps.SetEnvKeymaps(envList)
+	keymaps.SetClusterKeymaps(envList, clusterList, &clusterSelection)
 	keymaps.SetFlexKeymaps(app, leftFlex)
 	keymaps.SetFlexKeymaps(app, rightFlex)
 	keymaps.SetMainFlexKeymaps(app, mainFlex)
@@ -84,13 +88,8 @@ func main() {
 		panic(err)
 	}
 
-	if *outputPath != "" {
-		envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
-		clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterList.GetCurrentItem())
-		// TODO: for now, we simply split the tring of the color code.
-		// This should be solved more cleanly later
-		clusterMainTextStriped := clusterMainText[strings.Index(clusterMainText, "]")+1:]
-		clusterSelection := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", envMainText, clusterMainTextStriped, clusterSecondaryText)
+	if *outputPath != "" && clusterSelection.ClusterID != "" {
+		clusterSelection := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", clusterSelection.Profile, clusterSelection.ClusterName, clusterSelection.ClusterID)
 
 		file, createErr := os.Create(*outputPath)
 		if createErr != nil {

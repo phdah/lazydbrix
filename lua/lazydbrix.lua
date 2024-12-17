@@ -77,6 +77,7 @@ function Lazydbrix:open()
         utils.log_error("No command specified for Lazydbrix")
         return
     end
+    utils.log_debug("Binary: " .. self.bin)
     local term_cmd = string.format(
                          ":FloatermNew --width=0.9 --height=0.9 %s -nvim %s",
                          self.bin, self.file)
