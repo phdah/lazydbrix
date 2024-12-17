@@ -56,14 +56,18 @@ function Lazydbrix:install()
     end
 
     utils.log_debug("All dependencies exists")
-    install.exec(self.source)
-
-    local lazydbrixInstalled  = install.runVarifyBin({self.source})
-    if not lazydbrixInstalled  then
+    local success = install.exec(self.source)
+    if not success then
         utils.log_error("Installation of lazydbrix was not successfully!")
-    else
-        utils.log_info("Installation of lazydbrix was successfully, dbrix away!")
+        return
     end
+
+    local lazydbrixBinaryExists  = install.runVarifyBin({self.bin})
+    if not lazydbrixBinaryExists  then
+        utils.log_error("There exists no lazydbrix binary")
+        return
+    end
+    utils.log_info("Installation of lazydbrix was successfully, dbrix away!")
 end
 
 --- Function to open Floaterm with the command

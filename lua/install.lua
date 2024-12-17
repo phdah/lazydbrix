@@ -21,68 +21,78 @@ function M.output() return vim.fn.stdpath("cache") .. "/lazydbrix" end
 function M.file() return M.output() .. "/cluster_selection.nvim" end
 
 ---@param job table build command for go
----@return nil
+---@return boolean success, string|nil output or error
 local function run_job(job)
-    if not job then
-        utils.log_error("No job passed to run_job")
-        return
-    end
+    if not job then return false, "No job passed to run_job" end
 
     if not job.cmd or type(job.cmd) ~= "string" then
-        utils.log_error("Invalid or missing command in job")
-        return
+        return false, "Invalid or missing command in job"
     end
+
+    -- Result of the run_job
+    local success = true
+
+    local uv = vim.loop
+    local stdout = uv.new_pipe(false)
+    local stderr = uv.new_pipe(false)
+    local handle
+    local result, err_output = {}, {}
+    local done = false
 
     local cmd = job.cmd
     local args = job.args or {}
 
-    utils.log_debug("Running command: " .. cmd .. " " .. table.concat(args, " "))
-
-    -- Create pipes for stdout and stderr
-    local uv = vim.loop
-    local stdout = uv.new_pipe(false)
-    local stderr = uv.new_pipe(false)
-
     -- Start the process
-    handle, pid = uv.spawn(cmd, {args = args, stdio = {nil, stdout, stderr}},
-                           function(exit_code, signal)
-        -- Cleanup after the process exits
-        handle:close()
+    handle, _ = uv.spawn(cmd, {args = args, stdio = {nil, stdout, stderr}},
+                         function(exit_code, _)
+        -- Cleanup after process exit
         stdout:close()
         stderr:close()
+        handle:close()
+        done = true
 
-        if exit_code == 0 then
-            utils.log_debug("Command completed successfully")
-        else
-            utils.log_error("Command exited with code: " .. exit_code ..
-                                " and signal: " .. signal)
+        if exit_code ~= 0 then
+            success = false
+            table.insert(err_output, "Command failed with exit code: " .. exit_code)
         end
     end)
 
     if not handle then
-        utils.log_error("Failed to start job: " .. cmd)
-        return
+        success = false
+        table.insert(err_output, "Failed to start job: " .. cmd)
     end
 
-    utils.log_debug("Process started with PID: " .. pid)
-
-    -- Capture stdout
+    -- Read stdout
     stdout:read_start(function(err, data)
         if err then
-            utils.log_error("Error reading stdout: " .. err)
+            success = false
+            table.insert(err_output, "Error reading stdout: " .. err)
         elseif data then
-            utils.log_debug("Job run output: " .. data)
+            table.insert(result, data)
         end
     end)
 
-    -- Capture stderr
+    -- Read stderr
     stderr:read_start(function(err, data)
         if err then
-            utils.log_error("Error reading stderr: " .. err)
+            success = false
+            table.insert(err_output, "Error reading stderr: " .. err)
         elseif data then
-            utils.log_error("Error output: " .. data)
+            table.insert(err_output, data)
         end
     end)
+
+    -- Wait for the job to complete using a coroutine
+    vim.wait(100000, function() return done end, 50) -- Timeout: 100 seconds, Check interval: 50ms
+
+    if not done then return false, "Job timed out" end
+    if not success then
+        return false, table.concat(err_output, "\n") -- Success with output
+    end
+
+    -- If all succededs, return true and result
+    return true, table.concat(result, "\n") -- Success with output
+
 end
 
 --- Verify if a binary is installed
@@ -110,9 +120,9 @@ function M.runVarifyBin(dependencies)
     for _, binary in ipairs(dependencies) do
         local path = varifyBin(binary)
         if path then
-            utils.log_debug("Dependency" .. binary .. " is installed at: " .. path)
+            utils.log_debug("Dependency: " .. binary .. " is installed at: " .. path)
         else
-            utils.log_error("Dependency" .. binary .. " is not installed or not in PATH.")
+            utils.log_error("Dependency: " .. binary .. " is not installed or not in PATH.")
             successfully = false
         end
     end
@@ -121,13 +131,19 @@ end
 
 --- Execute installation of lazydbrix go backend
 ---@param source string The github repo path to install
----@return nil
+---@return boolean success
 function M.exec(source)
     vim.fn.mkdir(M.output(), "p")
 
     local job = {cmd = "go", args = {"install", source}}
 
-    run_job(job)
+    local success, output_or_error = run_job(job)
+    if success then
+        utils.log_debug("Job completed successfully: " .. output_or_error)
+    else
+        utils.log_error("Job failed: " .. output_or_error)
+    end
+    return success
 end
 
 return M
