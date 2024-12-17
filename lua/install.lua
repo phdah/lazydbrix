@@ -5,7 +5,7 @@ local M = {}
 function M.dir()
     -- Check if go bin dir is defined
     local goBin = vim.fn.getenv("GOBIN")
-    if goBin ~= vim.NIL then return goBin .. "/go/bin" end
+    if goBin ~= vim.NIL then return goBin end
 
     -- Default to home dir
     return vim.fn.getenv("HOME") .. "/go/bin"

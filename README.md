@@ -7,14 +7,13 @@ A simple, minimalistic, easy plugin to work with Databricks & Pyspark locally in
 
 ## 📦 Install
 
-Currently only supports `lazy` package manager:
-
+Using `lazy` package manager:
 ```lua
 {
     'phdah/lazydbrix',
     dependencies = {"voldikss/vim-floaterm"}
-    -- NOTE: Uses both go and make to install.
-    -- Make sure they are present on the system.
+    -- NOTE: Uses go to install.
+    -- Make sure it's present on the system.
 }
 ```
 
@@ -25,13 +24,18 @@ the binary:
 :lua require("lazydbrix").lazydbrix:install()
 ```
 
+This command will call `go install github.com/phdah/lazydbrix/cmd/lazydbrix@main` and put the binary in either of:
+`$GOBIN/lazydbrix` or `$HOME/go/bin/lazydbrix`, dependent on if you have setup `GOBIN` or not (see [docs](https://pkg.go.dev/cmd/go#hdr-Environment_variables)).
+
 > [!IMPORTANT]
-> This has to be run after every update through `lazy`.
+> This has to be run after every update through `lazy`, for now.
 
 ### 📋 Requirements
-- `make`
+
 - `go`
-- A Databricks config present at: `~/.databrickscfg`. With profiles to all needed workspaces:
+- A Databricks config present at: `~/.databrickscfg`. With profiles to all
+  needed workspaces:
+
 ```bash
 [DEFAULT]
 host = <your_host>
@@ -40,7 +44,9 @@ cluster_id = <your_cluster_id>
 org_id = <your_org_id>
 jobs-api-version = 2.1
 
-[other_profile]
+[TEST]
+...
+[PROD]
 ...
 ```
 
@@ -48,6 +54,7 @@ jobs-api-version = 2.1
 > All profiles that are in this file, needs to have valid setups, otherwise the plugin won't work
 
 ## 🚀 How to
+
 To open the window, run:
 
 ```vim
@@ -57,14 +64,14 @@ To open the window, run:
 Once inside of the floating window, this is how you navigate inside of `lazydbrix`:
 | Keymaps | Description |
 | :--- | --- |
-| `<C-c>` | Select the currently hovering cluster. This also exits `lazydbrix` |
+| `<C-c>` | This exits `lazydbrix` |
+| `<enter>` | Select the currently hovering cluster. This inly takes effect once exiting `lazydbrix` |
 | `j` | Move down in  the current window |
 | `k` | Move up in  the current window |
 | `l` | Move down a window |
 | `h` | Move up a window |
 | `<Tab>` | Move to the right window |
 | `<S-Tab>` | Move to the left window |
-
 
 #### 💤 Lazy loading
 
@@ -86,5 +93,5 @@ For lazy loading, set the `keys` object to suitable key mapping:
 ## 📶 Roadmap
 
 | Feature | Status |
-| --- | --- |
-| `tbd` | 🟡 |
+| ------- | ------ |
+| `tbd`   | 🟡     |
