@@ -100,7 +100,7 @@ local lazydbrix = Lazydbrix.newLazydbrix({
     dependencies = {"go"},
     file = install.file(),
     bin = install.bin(),
-    source = "github.com/phdah/lazydbrix/cmd/lazydbrix@latest"
+    source = "github.com/phdah/lazydbrix/cmd/lazydbrix@main"
 })
 
 M.lazydbrix = lazydbrix
