@@ -5,30 +5,32 @@
 A simple, minimalistic, easy plugin to work with Databricks & Pyspark locally in Neovim
 </p>
 
+> [!IMPORTANT]
+> This plugin is in beta, and constant breaking changes is expected.
+
 ## 📦 Install
 
 Using `lazy` package manager:
 ```lua
 {
     'phdah/lazydbrix',
-    dependencies = {"voldikss/vim-floaterm"}
     -- NOTE: Uses go to install.
     -- Make sure it's present on the system.
+    build = ':lua require("lazydbrix").install()',
+    dependencies = {"voldikss/vim-floaterm"}
 }
 ```
 
-After fetching the plugin, please run the following command in Neovim to install
-the binary:
+By setting this `build` command:
 
 ```vim
 :lua require("lazydbrix").install()
 ```
 
-This command will call `go install github.com/phdah/lazydbrix/cmd/lazydbrix@main` and put the binary in either of:
-`$GOBIN/lazydbrix` or `$HOME/go/bin/lazydbrix`, dependent on if you have setup `GOBIN` or not (see [docs](https://pkg.go.dev/cmd/go#hdr-Environment_variables)).
+the `lazydbrix` binary is ensured to be installed or updated when the plugin is.
 
-> [!IMPORTANT]
-> This has to be run after every update through `lazy`, for now.
+> [!NOTE]
+> The install will call `go install github.com/phdah/lazydbrix/cmd/lazydbrix@main` and put the binary in either of: `$GOBIN/lazydbrix` or `$HOME/go/bin/lazydbrix`, dependent on if you have setup `GOBIN` or not (see [docs](https://pkg.go.dev/cmd/go#hdr-Environment_variables)).
 
 ### 📋 Requirements
 
@@ -81,6 +83,7 @@ For lazy loading, set the `keys` object to suitable keymapping as well as `filet
 ```lua
 {
     'phdah/lazydbrix',
+    build = ':lua require("lazydbrix").install()',
     ft = {"python"},
     opts = {sourceOnStart = true},
     keys = {
