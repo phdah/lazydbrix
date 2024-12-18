@@ -147,4 +147,13 @@ function M.open()
     end
 end
 
+--- Wrapper function of Lazydbrix:sourceFile()
+function M.show()
+    if lazydbrix == nil then
+        return
+    else
+        lazydbrix:sourceFile()
+    end
+end
+
 return M

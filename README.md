@@ -63,6 +63,7 @@ These are the functions to be called from `require("lazydbrix")`
 | `install()` | This installs `lazydbrix` |
 | `open()` | This opens `lazydbrix` in a floating window |
 | `setup()` | Update configurations to be used for the `Lazydbrix` class |
+| `show()` | Source and show the current cluster selection |
 
 Once inside of the floating window, this is how you navigate inside of `lazydbrix`:
 | Keymaps | Description |
