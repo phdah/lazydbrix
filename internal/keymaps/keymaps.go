@@ -10,23 +10,9 @@ import (
 	"github.com/rivo/tview"
 )
 
-func SetGlobalKaymaps(app *tview.Application) {
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 'q':
-				app.Stop()
-				return nil
-			}
-		}
-		return event
-	})
-
-}
-
 // Set keymaps for a tview.List
-func SetEnvKeymaps(envList *tview.List) {
+func SetEnvKeymaps(app *tview.Application, envList *tview.List) {
+	originalCapture := envList.GetInputCapture()
 	envList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyRune:
@@ -37,7 +23,15 @@ func SetEnvKeymaps(envList *tview.List) {
 			case 'k':
 				utils.MoveListUp(envList)
 				return nil
+			case 'q':
+				log.Printf("Trying to quite")
+				app.Stop()
+				return nil
 			}
+		}
+		// Pass the event to the original handler if not handled here
+		if originalCapture != nil {
+			return originalCapture(event)
 		}
 		return event
 	})
@@ -59,7 +53,7 @@ func MakeListSelection(envList *tview.List, clusterList *tview.List, clusterSele
 }
 
 // Set keymaps for a tview.List
-func SetClusterKeymaps(envList *tview.List, clusterList *tview.List, clusterSelection *tui.ClusterSelection) {
+func SetClusterKeymaps(app *tview.Application, envList *tview.List, clusterList *tview.List, clusterSelection *tui.ClusterSelection) {
 	clusterList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyRune:
@@ -69,6 +63,10 @@ func SetClusterKeymaps(envList *tview.List, clusterList *tview.List, clusterSele
 				return nil
 			case 'k':
 				utils.MoveListUp(clusterList)
+				return nil
+			case 'q':
+				log.Printf("Trying to quite")
+				app.Stop()
 				return nil
 			}
 		case tcell.KeyEnter:
@@ -92,6 +90,10 @@ func SetFlexKeymaps(app *tview.Application, flex *tview.Flex) {
 			case 'l':
 				utils.MoveFlexItemDown(app, flex)
 				return nil
+			case 'q':
+				log.Printf("Trying to quite")
+				app.Stop()
+				return nil
 			}
 		}
 		return event
@@ -102,6 +104,13 @@ func SetFlexKeymaps(app *tview.Application, flex *tview.Flex) {
 func SetMainFlexKeymaps(app *tview.Application, flex *tview.Flex) {
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'q':
+				log.Printf("Trying to quite")
+				app.Stop()
+				return nil
+			}
 		case tcell.KeyTab:
 			utils.MoveFlexRight(app, flex)
 			return nil

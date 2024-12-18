@@ -76,9 +76,8 @@ func main() {
 	clusterSelection := tui.ClusterSelection{}
 
 	// Set the keymaps
-	keymaps.SetGlobalKaymaps(app)
-	keymaps.SetEnvKeymaps(envList)
-	keymaps.SetClusterKeymaps(envList, clusterList, &clusterSelection)
+	keymaps.SetEnvKeymaps(app, envList)
+	keymaps.SetClusterKeymaps(app, envList, clusterList, &clusterSelection)
 	keymaps.SetFlexKeymaps(app, leftFlex)
 	keymaps.SetFlexKeymaps(app, rightFlex)
 	keymaps.SetMainFlexKeymaps(app, mainFlex)
