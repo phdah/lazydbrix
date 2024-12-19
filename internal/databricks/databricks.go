@@ -25,53 +25,72 @@ type ClusterInfo struct {
 	State                  string            `json:"state"`
 }
 
-// GetClusterNames fetches all cluster names and IDs from the specified profile.
-func GetClusterNames(profile string) *orderedmap.OrderedMap[string, string] {
-	w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
-		Profile: profile,
-	}))
+// Struct
+type DatabricksConnection struct {
+	// Public
+	ProfileClusters map[string]*orderedmap.OrderedMap[string, string]
 
-	all, err := w.Clusters.ListAll(context.Background(), compute.ListClustersRequest{})
-	if err != nil {
-		log.Panicf("Failed to fetch clusters using profile '%s': %v\n\n[Suggestion: check your VPN]", profile, err)
-	}
-
-	nameToIDMap := orderedmap.NewOrderedMap[string, string]()
-	for _, c := range all {
-		if strings.HasPrefix(c.ClusterName, "job-") {
-			continue
-		}
-		nameToIDMap.Set(c.ClusterName, c.ClusterId)
-	}
-
-	return nameToIDMap
+	// Private
+	profiles   []string
+	workspaces map[string]*databricks.WorkspaceClient
+	mu         *sync.Mutex
 }
 
-func GetAllEnvClusters(mu *sync.Mutex, profiles []string) map[string]*orderedmap.OrderedMap[string, string] {
-	profileClusters := make(map[string]*orderedmap.OrderedMap[string, string])
+// Constructor
+func NewDatabricksConnection(profiles []string) *DatabricksConnection {
+	return &DatabricksConnection{
+		profiles:        profiles,
+		workspaces:      make(map[string]*databricks.WorkspaceClient),
+		ProfileClusters: make(map[string]*orderedmap.OrderedMap[string, string]),
+		mu:              &sync.Mutex{},
+	}
+}
+
+/*
+Setters
+*/
+
+// Set workspaces
+func (dc *DatabricksConnection) SetWorkspaces() {
+	for _, profile := range dc.profiles {
+		dc.workspaces[profile] = databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
+			Profile: profile,
+		}))
+	}
+}
+
+// Set all cluster names and IDs
+func (dc *DatabricksConnection) SetClusters() {
 	var wg sync.WaitGroup
-	for _, profile := range profiles {
+	for _, profile := range dc.profiles {
 		wg.Add(1)
 		go func(profile string) {
 			defer wg.Done()
-			nameToIDMap := GetClusterNames(profile)
-			mu.Lock()
-			profileClusters[profile] = nameToIDMap
-			mu.Unlock()
+
+			all, err := dc.workspaces[profile].Clusters.ListAll(context.Background(), compute.ListClustersRequest{})
+			if err != nil {
+				log.Panicf("Failed to fetch clusters using profile '%s': %v\n\n[Suggestion: check your VPN]", profile, err)
+			}
+
+			nameToIDMap := orderedmap.NewOrderedMap[string, string]()
+			for _, c := range all {
+				if strings.HasPrefix(c.ClusterName, "job-") {
+					continue
+				}
+				nameToIDMap.Set(c.ClusterName, c.ClusterId)
+			}
+
+			dc.mu.Lock()
+			dc.ProfileClusters[profile] = nameToIDMap
+			dc.mu.Unlock()
 		}(profile)
 	}
 	wg.Wait()
-
-	return profileClusters
 }
 
 // GetClusterDetails fetches detailed information about a specific cluster.
-func GetClusterDetails(profile *string, clusterID string) (*ClusterInfo, error) {
-	w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{
-		Profile: *profile,
-	}))
-
-	details, err := w.Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: clusterID})
+func (dc *DatabricksConnection) GetClusterDetails(profile *string, clusterID string) (*ClusterInfo, error) {
+	details, err := dc.workspaces[*profile].Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: clusterID})
 	if err != nil {
 		return &ClusterInfo{}, err // this is not pickung up correct profile
 	}
@@ -92,8 +111,8 @@ func GetClusterDetails(profile *string, clusterID string) (*ClusterInfo, error) 
 }
 
 // DisplayClusterDetails formats and displays cluster details as JSON.
-func FormatClusterDetails(details *ClusterInfo) string {
-	jsonData, err := json.MarshalIndent(details, "", "    ")
+func (ci *ClusterInfo) Format() string {
+	jsonData, err := json.MarshalIndent(ci, "", "    ")
 	if err != nil {
 		log.Fatalf("Failed to marshal cluster details: %v", err)
 	}

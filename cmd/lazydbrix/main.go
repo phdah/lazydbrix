@@ -39,13 +39,15 @@ func main() {
 	log.SetOutput(logs)
 
 	// Databricks
-	allNameToIDMap := databricks.GetAllEnvClusters(&mu, profiles)
+	dc := databricks.NewDatabricksConnection(profiles)
+	dc.SetWorkspaces()
+	dc.SetClusters()
 
 	// TUI components
 	app := tview.NewApplication()
 	prevText := tui.PreTextSetup()
-	clusterList := tui.ClusterListSetup(&mu, &currentProfile, app, allNameToIDMap, prevText)
-	envList := tui.EnvListSetup(&mu, &currentProfile, app, profiles, clusterList, allNameToIDMap, prevText)
+	clusterList := tui.ClusterListSetup(&mu, &currentProfile, app, dc, prevText)
+	envList := tui.EnvListSetup(&mu, &currentProfile, app, profiles, clusterList, dc, prevText)
 
 	// Flex components
 	leftFlex := tview.NewFlex().SetDirection(tview.FlexRow).

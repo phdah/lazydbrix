@@ -17,10 +17,10 @@ type ClusterSelection struct {
 	ClusterName string
 }
 
-func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, allNameToIDMap map[string]*orderedmap.OrderedMap[string, string], prevText *tview.TextView) *tview.List {
+func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, dc *databricks.DatabricksConnection, prevText *tview.TextView) *tview.List {
 	clusterList := tview.NewList()
 	clusterList.ShowSecondaryText(false)
-	nameToIDMap := allNameToIDMap[*profile]
+	nameToIDMap := dc.ProfileClusters[*profile]
 
 	var firstClusterID string
 	for c := nameToIDMap.Front(); c != nil; c = c.Next() {
@@ -35,24 +35,24 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, a
 		mainTextUncolored := utils.StripColor(mainText)
 		log.Printf("->clusterList: profile %s, cluster %s", *profile, mainTextUncolored)
 		go func() {
-			nameToIDMap = allNameToIDMap[*profile]
+			nameToIDMap = dc.ProfileClusters[*profile]
 			clusterID := nameToIDMap.GetElement(mainTextUncolored).Value
-			details, err := databricks.GetClusterDetails(profile, clusterID)
+			details, err := dc.GetClusterDetails(profile, clusterID)
 			if err != nil {
 				log.Printf("Failed to fetch cluster details: %v", err)
 			}
 			mu.Lock()
 			defer mu.Unlock()
 			app.QueueUpdateDraw(func() {
-				prevText.SetText(databricks.FormatClusterDetails(details))
+				prevText.SetText(details.Format())
 			})
 		}()
 	})
 
 	clusterList.SetBorder(true).SetTitle("Clusters")
 
-	details, _ := databricks.GetClusterDetails(profile, firstClusterID)
-	prevText.SetText(databricks.FormatClusterDetails(details))
+	details, _ := dc.GetClusterDetails(profile, firstClusterID)
+	prevText.SetText(details.Format())
 
 	return clusterList
 }
