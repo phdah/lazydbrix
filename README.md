@@ -6,7 +6,7 @@ A simple, minimalistic, easy plugin to work with Databricks & Pyspark locally in
 </p>
 
 > [!IMPORTANT]
-> This plugin is in beta, and constant breaking changes is expected.
+> This plugin is in beta, and constant breaking changes is expected. For a somewhat "stable" version, use the tag: `0.1.0`.
 
 ## 📦 Install
 
