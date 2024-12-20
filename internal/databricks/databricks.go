@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/elliotchance/orderedmap/v2"
+	"github.com/phdah/lazydbrix/internal/utils"
 )
 
 // ClusterInfo contains only the desired fields from the cluster details.
@@ -88,6 +89,10 @@ func (dc *DatabricksConnection) SetClusters() {
 	wg.Wait()
 }
 
+/*
+Getters
+*/
+
 // GetClusterDetails fetches detailed information about a specific cluster.
 func (dc *DatabricksConnection) GetClusterDetails(profile *string, clusterID string) (*ClusterInfo, error) {
 	details, err := dc.workspaces[*profile].Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: clusterID})
@@ -110,6 +115,10 @@ func (dc *DatabricksConnection) GetClusterDetails(profile *string, clusterID str
 	return clusterInfo, nil
 }
 
+/*
+Utils
+*/
+
 // DisplayClusterDetails formats and displays cluster details as JSON.
 func (ci *ClusterInfo) Format() string {
 	jsonData, err := json.MarshalIndent(ci, "", "    ")
@@ -118,4 +127,34 @@ func (ci *ClusterInfo) Format() string {
 	}
 
 	return string(jsonData)
+}
+
+// ToggleCluster starts or stops a cluster based on its current state.
+func (dc *DatabricksConnection) ToggleCluster(cluster *utils.ClusterFromList) {
+	details, err := dc.GetClusterDetails(&cluster.Profile, cluster.ClusterID)
+	if err != nil {
+		log.Fatalf("Failed to get cluster details: %v", err)
+	}
+	switch details.State {
+	case "TERMINATED", "TERMINATING":
+		_, err := dc.workspaces[cluster.Profile].Clusters.Start(context.Background(), compute.StartCluster{
+			ClusterId: cluster.ClusterID,
+		})
+		if err != nil {
+			log.Fatalf("Failed to start cluster '%s': %v", cluster.ClusterName, err)
+		}
+		log.Println("Cluster starting initiated successfully.")
+	case "RUNNING", "PENDING":
+		// Correct field name for ClusterId
+		_, err := dc.workspaces[cluster.Profile].Clusters.Delete(context.Background(), compute.DeleteCluster{
+			ClusterId: cluster.ClusterID,
+		})
+		if err != nil {
+			log.Fatalf("Failed to terminate cluster '%s': %v", cluster.ClusterName, err)
+		}
+		log.Println("Cluster termination initiated successfully.")
+	default:
+		log.Fatalf("cluster '%s' is in an unsupported state: %s", cluster.ClusterName, details.State)
+	}
+
 }

@@ -1,10 +1,11 @@
 package keymaps
 
 import (
-	"fmt"
 	"log"
+	"sync"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/phdah/lazydbrix/internal/databricks"
 	"github.com/phdah/lazydbrix/internal/tui"
 	"github.com/phdah/lazydbrix/internal/utils"
 	"github.com/rivo/tview"
@@ -37,24 +38,15 @@ func SetEnvKeymaps(app *tview.Application, envList *tview.List) {
 	})
 }
 
-// Helper function to make selections in a list
-func MakeListSelection(envList *tview.List, clusterList *tview.List, clusterSelection *tui.ClusterSelection) {
-	index := clusterList.GetCurrentItem()
-	itemFirstText, itemSecondText := clusterList.GetItemText(index)
-
-	envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
-	clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterList.GetCurrentItem())
-	clusterSelection.Profile = envMainText
-	clusterSelection.ClusterName = clusterMainText
-	clusterSelection.ClusterID = clusterSecondaryText
-
-	coloredItemFirstText := fmt.Sprintf("[green]%s", itemFirstText)
-	clusterList.SetItemText(index, coloredItemFirstText, itemSecondText)
-}
-
 // Set keymaps for a tview.List
-func SetClusterKeymaps(app *tview.Application, envList *tview.List, clusterList *tview.List, clusterSelection *tui.ClusterSelection) {
+func SetClusterKeymaps(app *tview.Application, envList *tview.List, clusterList *tview.List, cS *tui.ClusterSelection, dc *databricks.DatabricksConnection) {
 	clusterList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// TODO: Not sure if this actually works
+		// if keys are spammed, it breaks
+		var mu sync.Mutex
+		mu.Lock()
+		defer mu.Unlock()
+
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
@@ -68,10 +60,17 @@ func SetClusterKeymaps(app *tview.Application, envList *tview.List, clusterList 
 				log.Printf("Trying to quite")
 				app.Stop()
 				return nil
+			case 's':
+				clusterFromList := utils.NewClusterFromList(envList, clusterList)
+				dc.ToggleCluster(clusterFromList)
+				return nil
 			}
 		case tcell.KeyEnter:
-			MakeListSelection(envList, clusterList, clusterSelection)
-			log.Printf("ClusterSelection has been updated to: %s", clusterSelection.ClusterName)
+			clusterFromList := utils.ListSelection(envList, clusterList)
+			cS.Profile = clusterFromList.Profile
+			cS.ClusterName = clusterFromList.ClusterName
+			cS.ClusterID = clusterFromList.ClusterID
+			log.Printf("ClusterSelection has been updated to: %s", cS.ClusterName)
 			return nil
 		}
 		return event

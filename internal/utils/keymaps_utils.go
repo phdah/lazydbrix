@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/rivo/tview"
 )
 
@@ -61,4 +62,29 @@ func MoveFlexLeft(app *tview.Application, flex *tview.Flex) {
 			break
 		}
 	}
+}
+
+type ClusterFromList struct {
+	Index       int
+	Profile     string
+	ClusterName string
+	ClusterID   string
+}
+
+// Get current cluster from list
+func NewClusterFromList(envList *tview.List, clusterList *tview.List) *ClusterFromList {
+	clusterIndex := clusterList.GetCurrentItem()
+	envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
+	clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterIndex)
+
+	return &ClusterFromList{clusterIndex, envMainText, clusterMainText, clusterSecondaryText}
+}
+
+// Helper function to make selections in a list
+func ListSelection(envList *tview.List, clusterList *tview.List) *ClusterFromList {
+	clusterFromList := NewClusterFromList(envList, clusterList)
+
+	coloredItemFirstText := fmt.Sprintf("[green]%s", clusterFromList.ClusterName)
+	clusterList.SetItemText(clusterFromList.Index, coloredItemFirstText, clusterFromList.ClusterID)
+	return clusterFromList
 }

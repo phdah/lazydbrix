@@ -72,14 +72,14 @@ func main() {
 		AddText("lazydbrix", true, tview.AlignCenter, tcell.ColorGreen).
 		AddText("Lazily deal with Databricks clusters", true, tview.AlignCenter, tcell.ColorWhite).
 		AddText("www.github.com/phdah/lazydbrix", false, tview.AlignRight, tcell.ColorGreen).
-		AddText("Quit q | <enter> select", false, tview.AlignLeft, tcell.ColorBlue)
+		AddText("Quit: q | Select cluster: <enter> | Toggle cluster: s", false, tview.AlignLeft, tcell.ColorBlue)
 
 	// Setup a cluster selection struct
-	clusterSelection := tui.ClusterSelection{}
+	clusterSelection := &tui.ClusterSelection{}
 
 	// Set the keymaps
 	keymaps.SetEnvKeymaps(app, envList)
-	keymaps.SetClusterKeymaps(app, envList, clusterList, &clusterSelection)
+	keymaps.SetClusterKeymaps(app, envList, clusterList, clusterSelection, dc)
 	keymaps.SetFlexKeymaps(app, leftFlex)
 	keymaps.SetFlexKeymaps(app, rightFlex)
 	keymaps.SetMainFlexKeymaps(app, mainFlex)
