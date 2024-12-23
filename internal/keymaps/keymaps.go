@@ -13,7 +13,6 @@ import (
 
 // Set keymaps for a tview.List
 func SetEnvKeymaps(app *tview.Application, envList *tview.List) {
-	originalCapture := envList.GetInputCapture()
 	envList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyRune:
@@ -30,23 +29,13 @@ func SetEnvKeymaps(app *tview.Application, envList *tview.List) {
 				return nil
 			}
 		}
-		// Pass the event to the original handler if not handled here
-		if originalCapture != nil {
-			return originalCapture(event)
-		}
 		return event
 	})
 }
 
 // Set keymaps for a tview.List
-func SetClusterKeymaps(app *tview.Application, envList *tview.List, clusterList *tview.List, cS *tui.ClusterSelection, dc *databricks.DatabricksConnection) {
+func SetClusterKeymaps(mu *sync.Mutex, app *tview.Application, envList *tview.List, clusterList *tview.List, prevText *tview.TextView, cS *tui.ClusterSelection, dc *databricks.DatabricksConnection) {
 	clusterList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// TODO: Not sure if this actually works
-		// if keys are spammed, it breaks
-		var mu sync.Mutex
-		mu.Lock()
-		defer mu.Unlock()
-
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
@@ -63,6 +52,15 @@ func SetClusterKeymaps(app *tview.Application, envList *tview.List, clusterList 
 			case 's':
 				clusterFromList := utils.NewClusterFromList(envList, clusterList)
 				dc.ToggleCluster(clusterFromList)
+				details, err := dc.GetClusterDetails(&clusterFromList.Profile, clusterFromList.ClusterID)
+				if err != nil {
+					log.Printf("Failed to get cluster details: %v", err)
+				}
+				go func() {
+					mu.Lock()
+					defer mu.Unlock()
+					details.UpdateDetails(app, prevText)
+				}()
 				return nil
 			}
 		case tcell.KeyEnter:

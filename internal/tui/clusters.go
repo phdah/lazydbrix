@@ -43,9 +43,8 @@ func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, d
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			app.QueueUpdateDraw(func() {
-				prevText.SetText(details.Format())
-			})
+			details.UpdateDetails(app, prevText)
+			log.Println("Done updateing text field")
 		}()
 	})
 

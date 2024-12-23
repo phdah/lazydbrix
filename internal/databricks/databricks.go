@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/elliotchance/orderedmap/v2"
 	"github.com/phdah/lazydbrix/internal/utils"
+	"github.com/rivo/tview"
 )
 
 // ClusterInfo contains only the desired fields from the cluster details.
@@ -118,6 +119,12 @@ func (dc *DatabricksConnection) GetClusterDetails(profile *string, clusterID str
 /*
 Utils
 */
+
+func (di *ClusterInfo) UpdateDetails(app *tview.Application, prevText *tview.TextView) {
+	app.QueueUpdateDraw(func() {
+		prevText.SetText(di.Format())
+	})
+}
 
 // DisplayClusterDetails formats and displays cluster details as JSON.
 func (ci *ClusterInfo) Format() string {

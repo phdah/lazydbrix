@@ -79,7 +79,7 @@ func main() {
 
 	// Set the keymaps
 	keymaps.SetEnvKeymaps(app, envList)
-	keymaps.SetClusterKeymaps(app, envList, clusterList, clusterSelection, dc)
+	keymaps.SetClusterKeymaps(&mu, app, envList, clusterList, prevText, clusterSelection, dc)
 	keymaps.SetFlexKeymaps(app, leftFlex)
 	keymaps.SetFlexKeymaps(app, rightFlex)
 	keymaps.SetMainFlexKeymaps(app, mainFlex)
