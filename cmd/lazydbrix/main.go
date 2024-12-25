@@ -10,6 +10,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
+	"github.com/phdah/lazydbrix/internal/colors"
 	"github.com/phdah/lazydbrix/internal/databricks"
 	"github.com/phdah/lazydbrix/internal/keymaps"
 	"github.com/phdah/lazydbrix/internal/tui"
@@ -45,9 +46,16 @@ func main() {
 
 	// TUI components
 	app := tview.NewApplication()
+	// Set the background color to default
+	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
+
 	prevText := tui.PreTextSetup()
 	clusterList := tui.ClusterListSetup(&mu, &currentProfile, app, dc, prevText)
 	envList := tui.EnvListSetup(&mu, &currentProfile, app, profiles, clusterList, dc, prevText)
+
+	// Set list custom colors
+	colors.SetCustomListColor(envList)
+	colors.SetCustomListColor(clusterList)
 
 	// Flex components
 	leftFlex := tview.NewFlex().SetDirection(tview.FlexRow).
