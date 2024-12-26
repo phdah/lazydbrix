@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/elliotchance/orderedmap/v2"
-	"github.com/phdah/lazydbrix/internal/utils"
+	"github.com/phdah/lazydbrix/internal/iface"
 	"github.com/rivo/tview"
 )
 
@@ -95,14 +95,14 @@ Getters
 */
 
 // GetClusterDetails fetches detailed information about a specific cluster.
-func (dc *DatabricksConnection) GetClusterDetails(profile *string, clusterID string) (*ClusterInfo, error) {
-	details, err := dc.workspaces[*profile].Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: clusterID})
+func (dc *DatabricksConnection) GetClusterDetails(s iface.Cluster) (*ClusterInfo, error) {
+	details, err := dc.workspaces[*s.GetProfile()].Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: *s.GetClusterID()})
 	if err != nil {
 		return &ClusterInfo{}, err // this is not pickung up correct profile
 	}
 
 	clusterInfo := &ClusterInfo{
-		Profile:                *profile,
+		Profile:                *s.GetProfile(),
 		AutoterminationMinutes: details.AutoterminationMinutes,
 		ClusterID:              details.ClusterId,
 		ClusterName:            details.ClusterName,
@@ -120,9 +120,9 @@ func (dc *DatabricksConnection) GetClusterDetails(profile *string, clusterID str
 Utils
 */
 
-func (di *ClusterInfo) UpdateDetails(app *tview.Application, prevText *tview.TextView) {
+func (di *ClusterInfo) UpdateDetails(app *tview.Application, detailText *tview.TextView) {
 	app.QueueUpdateDraw(func() {
-		prevText.SetText(di.Format())
+		detailText.SetText(di.Format())
 	})
 }
 
@@ -137,31 +137,31 @@ func (ci *ClusterInfo) Format() string {
 }
 
 // ToggleCluster starts or stops a cluster based on its current state.
-func (dc *DatabricksConnection) ToggleCluster(cluster *utils.ClusterFromList) {
-	details, err := dc.GetClusterDetails(&cluster.Profile, cluster.ClusterID)
+func (dc *DatabricksConnection) ToggleCluster(s iface.Cluster) {
+	details, err := dc.GetClusterDetails(s)
 	if err != nil {
 		log.Fatalf("Failed to get cluster details: %v", err)
 	}
 	switch details.State {
 	case "TERMINATED", "TERMINATING":
-		_, err := dc.workspaces[cluster.Profile].Clusters.Start(context.Background(), compute.StartCluster{
-			ClusterId: cluster.ClusterID,
+		_, err := dc.workspaces[*s.GetProfile()].Clusters.Start(context.Background(), compute.StartCluster{
+			ClusterId: *s.GetClusterID(),
 		})
 		if err != nil {
-			log.Fatalf("Failed to start cluster '%s': %v", cluster.ClusterName, err)
+			log.Fatalf("Failed to start cluster '%s': %v", *s.GetClusterName(), err)
 		}
 		log.Println("Cluster starting initiated successfully.")
 	case "RUNNING", "PENDING":
 		// Correct field name for ClusterId
-		_, err := dc.workspaces[cluster.Profile].Clusters.Delete(context.Background(), compute.DeleteCluster{
-			ClusterId: cluster.ClusterID,
+		_, err := dc.workspaces[*s.GetProfile()].Clusters.Delete(context.Background(), compute.DeleteCluster{
+			ClusterId: *s.GetClusterID(),
 		})
 		if err != nil {
-			log.Fatalf("Failed to terminate cluster '%s': %v", cluster.ClusterName, err)
+			log.Fatalf("Failed to terminate cluster '%s': %v", *s.GetClusterName(), err)
 		}
 		log.Println("Cluster termination initiated successfully.")
 	default:
-		log.Fatalf("cluster '%s' is in an unsupported state: %s", cluster.ClusterName, details.State)
+		log.Fatalf("cluster '%s' is in an unsupported state: %s", *s.GetClusterName(), details.State)
 	}
 
 }

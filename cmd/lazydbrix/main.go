@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -23,21 +24,15 @@ func main() {
 	outputPath := flag.String("nvim", "", "(string) Path to file to which the cluster selection is written")
 
 	flag.Parse()
+
+	// Discard log output unless -debug is passed
+	log.SetOutput(io.Discard)
+
 	// Variable declaration
 	configPath := "~/.databrickscfg"
 	profiles := utils.GetProfiles(configPath)
 	currentProfile := profiles[0]
 	var mu sync.Mutex
-
-	logs := tview.NewTextView().
-		SetDynamicColors(true).
-		SetRegions(true).
-		SetWordWrap(true)
-
-	logs.SetBorder(true).SetTitle("Logs")
-
-	// Redirect standard log output to the TextView
-	log.SetOutput(logs)
 
 	// Databricks
 	dc := databricks.NewDatabricksConnection(profiles)
@@ -49,25 +44,35 @@ func main() {
 	// Set the background color to default
 	tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
 
-	prevText := tui.PreTextSetup()
-	clusterList := tui.ClusterListSetup(&mu, &currentProfile, app, dc, prevText)
-	envList := tui.EnvListSetup(&mu, &currentProfile, app, profiles, clusterList, dc, prevText)
+	// Construct tview objects
+	detailText := tui.NewText()
+	detailText.Setup("Cluster information")
+	clusterList := tui.NewClusterList(&mu, &currentProfile, app, dc, detailText)
+	clusterList.Setup()
+	envList := tui.NewEnvList(&mu, &currentProfile, app, profiles, clusterList, dc, detailText)
+	envList.Setup()
 
 	// Set list custom colors
-	colors.SetCustomListColor(envList)
-	colors.SetCustomListColor(clusterList)
+	colors.SetCustomListColor(envList.List)
+	colors.SetCustomListColor(clusterList.List)
 
-	// Flex components
+	// Create a left Flex
 	leftFlex := tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(envList, 0, 1, true).
-		AddItem(clusterList, 0, 1, false)
+		AddItem(envList.List, 0, 1, true).
+		AddItem(clusterList.List, 0, 1, false)
 
 	// Create a right Flex
 	rightFlex := tview.NewFlex().SetDirection(tview.FlexRow)
-	rightFlex.AddItem(prevText, 0, 1, true)
+	rightFlex.AddItem(detailText.Text, 0, 1, true)
 
+	// Pipe logs to tui if debug flag
 	if *debug == true {
-		rightFlex.AddItem(logs, 0, 3, false)
+		logs := tui.NewText()
+		logs.Setup("Logs")
+
+		// Redirect standard log output to the TextView
+		log.SetOutput(logs.Text)
+		rightFlex.AddItem(logs.Text, 0, 3, false)
 	}
 
 	mainFlex := tview.NewFlex().
@@ -83,32 +88,38 @@ func main() {
 		AddText("Quit: q | Select cluster: <enter> | Toggle cluster: s", false, tview.AlignLeft, tcell.ColorBlue)
 
 	// Setup a cluster selection struct
-	clusterSelection := &tui.ClusterSelection{}
+	cs := tui.NewClusterSelection()
 
 	// Set the keymaps
-	keymaps.SetEnvKeymaps(app, envList)
-	keymaps.SetClusterKeymaps(&mu, app, envList, clusterList, prevText, clusterSelection, dc)
+	keymaps.SetEnvKeymaps(app, envList.List)
+	keymaps.SetClusterKeymaps(&mu, app, envList.List, clusterList.List, detailText, cs, dc)
 	keymaps.SetFlexKeymaps(app, leftFlex)
 	keymaps.SetFlexKeymaps(app, rightFlex)
 	keymaps.SetMainFlexKeymaps(app, mainFlex)
 
 	// Set the root and run the application
-	if err := app.SetRoot(frame, true).SetFocus(envList).Run(); err != nil {
+	if err := app.SetRoot(frame, true).SetFocus(envList.List).Run(); err != nil {
 		panic(err)
 	}
 
-	if *outputPath != "" && clusterSelection.ClusterID != "" {
-		clusterSelection := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", clusterSelection.Profile, clusterSelection.ClusterName, clusterSelection.ClusterID)
+	if cs.ClusterID != "" {
+		if *outputPath != "" {
+			clusterSelectedLua := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", *cs.GetProfile(), *cs.GetClusterName(), *cs.GetClusterID())
 
-		file, createErr := os.Create(*outputPath)
-		if createErr != nil {
-			fmt.Println("Error creating to file:", createErr)
-			return
+			file, createErr := os.Create(*outputPath)
+			if createErr != nil {
+				fmt.Println("Error creating to file:", createErr)
+				return
+			}
+			_, writingErr := file.WriteString(clusterSelectedLua)
+			if writingErr != nil {
+				fmt.Println("Error writing to file:", writingErr)
+			}
+			fmt.Println("Successfully updated cluster info in file:", *outputPath)
+		} else {
+			fmt.Printf("Cluster selected, but not set: {Profile: %s, ClusterName: %s, ClusterID: %s}\n", *cs.GetProfile(), *cs.GetClusterName(), *cs.GetClusterID())
 		}
-		_, writingErr := file.WriteString(clusterSelection)
-		if writingErr != nil {
-			fmt.Println("Error writing to file:", writingErr)
-		}
-		fmt.Println("Successfully updated cluster info in file:", *outputPath)
+	} else {
+		fmt.Println("No selection made")
 	}
 }

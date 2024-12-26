@@ -6,6 +6,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/phdah/lazydbrix/internal/databricks"
+	"github.com/phdah/lazydbrix/internal/iface"
 	"github.com/phdah/lazydbrix/internal/tui"
 	"github.com/phdah/lazydbrix/internal/utils"
 	"github.com/rivo/tview"
@@ -24,7 +25,6 @@ func SetEnvKeymaps(app *tview.Application, envList *tview.List) {
 				utils.MoveListUp(envList)
 				return nil
 			case 'q':
-				log.Printf("Trying to quite")
 				app.Stop()
 				return nil
 			}
@@ -34,7 +34,7 @@ func SetEnvKeymaps(app *tview.Application, envList *tview.List) {
 }
 
 // Set keymaps for a tview.List
-func SetClusterKeymaps(mu *sync.Mutex, app *tview.Application, envList *tview.List, clusterList *tview.List, prevText *tview.TextView, cS *tui.ClusterSelection, dc *databricks.DatabricksConnection) {
+func SetClusterKeymaps(mu *sync.Mutex, app *tview.Application, envList *tview.List, clusterList *tview.List, detailText *tui.Text, s iface.Selector, dc *databricks.DatabricksConnection) {
 	clusterList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyRune:
@@ -46,29 +46,26 @@ func SetClusterKeymaps(mu *sync.Mutex, app *tview.Application, envList *tview.Li
 				utils.MoveListUp(clusterList)
 				return nil
 			case 'q':
-				log.Printf("Trying to quite")
 				app.Stop()
 				return nil
 			case 's':
-				clusterFromList := utils.NewClusterFromList(envList, clusterList)
-				dc.ToggleCluster(clusterFromList)
-				details, err := dc.GetClusterDetails(&clusterFromList.Profile, clusterFromList.ClusterID)
+				cfl := utils.NewClusterFromList(envList, clusterList)
+				dc.ToggleCluster(cfl)
+				details, err := dc.GetClusterDetails(cfl)
 				if err != nil {
 					log.Printf("Failed to get cluster details: %v", err)
 				}
 				go func() {
 					mu.Lock()
 					defer mu.Unlock()
-					details.UpdateDetails(app, prevText)
+					details.UpdateDetails(app, detailText.Text)
 				}()
 				return nil
 			}
 		case tcell.KeyEnter:
-			clusterFromList := utils.ListSelection(envList, clusterList)
-			cS.Profile = clusterFromList.Profile
-			cS.ClusterName = clusterFromList.ClusterName
-			cS.ClusterID = clusterFromList.ClusterID
-			log.Printf("ClusterSelection has been updated to: %s", cS.ClusterName)
+			cfl := utils.ListSelection(envList, clusterList)
+			s.SetSelection(*cfl.GetProfile(), *cfl.GetClusterID(), *cfl.GetClusterName())
+			log.Printf("ClusterSelection has been updated to: %s", *s.GetClusterName())
 			return nil
 		}
 		return event
@@ -88,7 +85,6 @@ func SetFlexKeymaps(app *tview.Application, flex *tview.Flex) {
 				utils.MoveFlexItemDown(app, flex)
 				return nil
 			case 'q':
-				log.Printf("Trying to quite")
 				app.Stop()
 				return nil
 			}
@@ -104,7 +100,6 @@ func SetMainFlexKeymaps(app *tview.Application, flex *tview.Flex) {
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case 'q':
-				log.Printf("Trying to quite")
 				app.Stop()
 				return nil
 			}

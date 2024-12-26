@@ -2,6 +2,9 @@ package utils
 
 import (
 	"fmt"
+	"log"
+	"sync"
+
 	"github.com/rivo/tview"
 )
 
@@ -65,6 +68,7 @@ func MoveFlexLeft(app *tview.Application, flex *tview.Flex) {
 }
 
 type ClusterFromList struct {
+	mu          sync.Mutex
 	Index       int
 	Profile     string
 	ClusterName string
@@ -74,17 +78,55 @@ type ClusterFromList struct {
 // Get current cluster from list
 func NewClusterFromList(envList *tview.List, clusterList *tview.List) *ClusterFromList {
 	clusterIndex := clusterList.GetCurrentItem()
-	envMainText, _ := envList.GetItemText(envList.GetCurrentItem())
-	clusterMainText, clusterSecondaryText := clusterList.GetItemText(clusterIndex)
+	profile, _ := envList.GetItemText(envList.GetCurrentItem())
+	clusterName, clusterID := clusterList.GetItemText(clusterIndex)
 
-	return &ClusterFromList{clusterIndex, envMainText, clusterMainText, clusterSecondaryText}
+	cfl := &ClusterFromList{}
+	cfl.SetClusterIndex(clusterIndex)
+	cfl.SetSelection(profile, clusterID, clusterName)
+
+	return cfl
+}
+
+func (cfl *ClusterFromList) GetProfile() *string {
+	cfl.mu.Lock()
+	defer cfl.mu.Unlock()
+	return &cfl.Profile
+}
+func (cfl *ClusterFromList) GetClusterID() *string {
+	cfl.mu.Lock()
+	defer cfl.mu.Unlock()
+	return &cfl.ClusterID
+}
+func (cfl *ClusterFromList) GetClusterName() *string {
+	cfl.mu.Lock()
+	defer cfl.mu.Unlock()
+	return &cfl.ClusterName
+}
+func (cfl *ClusterFromList) GetIndex() int {
+	cfl.mu.Lock()
+	defer cfl.mu.Unlock()
+	return cfl.Index
+}
+func (cfl *ClusterFromList) SetClusterIndex(index int) {
+	cfl.mu.Lock()
+	defer cfl.mu.Unlock()
+	cfl.Index = index
+}
+func (cfl *ClusterFromList) SetSelection(profile string, clusterID string, clusterName string) {
+	cfl.mu.Lock()
+	defer cfl.mu.Unlock()
+	log.Printf("Cluster selected: %s (ID: %s, Profile: %s)", clusterName, clusterID, profile)
+	cfl.Profile = profile
+	cfl.ClusterID = clusterID
+	cfl.ClusterName = clusterName
 }
 
 // Helper function to make selections in a list
 func ListSelection(envList *tview.List, clusterList *tview.List) *ClusterFromList {
-	clusterFromList := NewClusterFromList(envList, clusterList)
+	cfl := NewClusterFromList(envList, clusterList)
 
-	coloredItemFirstText := fmt.Sprintf("[green]%s", clusterFromList.ClusterName)
-	clusterList.SetItemText(clusterFromList.Index, coloredItemFirstText, clusterFromList.ClusterID)
-	return clusterFromList
+	coloredItemFirstText := fmt.Sprintf("[green]%s", *cfl.GetClusterName())
+	clusterList.SetItemText(cfl.GetIndex(), coloredItemFirstText, *cfl.GetClusterID())
+	return cfl
 }

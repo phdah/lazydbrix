@@ -6,69 +6,73 @@ import (
 
 	"github.com/rivo/tview"
 
-	"github.com/elliotchance/orderedmap/v2"
 	"github.com/phdah/lazydbrix/internal/databricks"
 	"github.com/phdah/lazydbrix/internal/utils"
 )
 
-type ClusterSelection struct {
-	Profile     string
-	ClusterID   string
-	ClusterName string
+type ClusterList struct {
+	mu         *sync.Mutex
+	profile    *string
+	app        *tview.Application
+	dc         *databricks.DatabricksConnection
+	detailText *Text
+	List       *tview.List
 }
 
-func ClusterListSetup(mu *sync.Mutex, profile *string, app *tview.Application, dc *databricks.DatabricksConnection, prevText *tview.TextView) *tview.List {
-	clusterList := tview.NewList()
-	clusterList.ShowSecondaryText(false)
-	nameToIDMap := dc.ProfileClusters[*profile]
+func NewClusterList(mu *sync.Mutex, profile *string, app *tview.Application, dc *databricks.DatabricksConnection, detailText *Text) *ClusterList {
+	return &ClusterList{mu, profile, app, dc, detailText, tview.NewList()}
+}
+
+func (cl *ClusterList) Setup() {
+	cl.List.ShowSecondaryText(false)
+	nameToIDMap := cl.dc.ProfileClusters[*cl.profile]
 
 	var firstClusterID string
 	for c := nameToIDMap.Front(); c != nil; c = c.Next() {
 		if firstClusterID == "" {
 			firstClusterID = c.Value
 		}
-		clusterList.AddItem(c.Key, c.Value, 0, nil)
+		cl.List.AddItem(c.Key, c.Value, 0, nil)
 	}
 
 	// Set a function to update the preview text view when the highlighted item changes
-	clusterList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+	cl.List.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		mainTextUncolored := utils.StripColor(mainText)
-		log.Printf("->clusterList: profile %s, cluster %s", *profile, mainTextUncolored)
+		log.Printf("->clusterList: profile %s, cluster %s", *cl.profile, mainTextUncolored)
 		go func() {
-			nameToIDMap = dc.ProfileClusters[*profile]
+			nameToIDMap = cl.dc.ProfileClusters[*cl.profile]
 			clusterID := nameToIDMap.GetElement(mainTextUncolored).Value
-			details, err := dc.GetClusterDetails(profile, clusterID)
+			details, err := cl.dc.GetClusterDetails(databricks.NewCluster(*cl.profile, clusterID, mainTextUncolored))
 			if err != nil {
 				log.Printf("Failed to fetch cluster details: %v", err)
 			}
-			mu.Lock()
-			defer mu.Unlock()
-			details.UpdateDetails(app, prevText)
+			cl.mu.Lock()
+			defer cl.mu.Unlock()
+			details.UpdateDetails(cl.app, cl.detailText.Text)
 			log.Println("Done updateing text field")
 		}()
 	})
 
-	clusterList.SetBorder(true).SetTitle("Clusters")
+	cl.List.SetBorder(true).SetTitle("Clusters")
 
-	details, _ := dc.GetClusterDetails(profile, firstClusterID)
-	prevText.SetText(details.Format())
-
-	return clusterList
+	details, _ := cl.dc.GetClusterDetails(databricks.NewCluster(*cl.profile, firstClusterID, ""))
+	cl.detailText.Text.SetText(details.Format())
 }
 
 // UpdateClusterList updates the cluster list based on the selected profile
-func UpdateClusterList(mu *sync.Mutex, app *tview.Application, profile *string, clusterList *tview.List, nameToIDMap *orderedmap.OrderedMap[string, string], prevText *tview.TextView) {
-	mu.Lock()
+func (cl *ClusterList) UpdateClusterList() {
+	cl.mu.Lock()
 	go func() {
-		defer mu.Unlock()
-		clusterList.Clear()
+		defer cl.mu.Unlock()
+		nameToIDMap := cl.dc.ProfileClusters[*cl.profile]
+		cl.List.Clear()
 		var firstClusterID string
 		for c := nameToIDMap.Front(); c != nil; c = c.Next() {
 			if firstClusterID == "" {
 				firstClusterID = c.Value
 			}
-			clusterList.AddItem(c.Key, c.Value, 0, nil)
+			cl.List.AddItem(c.Key, c.Value, 0, nil)
 		}
-		log.Printf("UpdateClusterList, profile: %s. firstClusterID is %s", *profile, firstClusterID)
+		log.Printf("UpdateClusterList, profile: %s. firstClusterID is %s", *cl.profile, firstClusterID)
 	}()
 }

@@ -8,22 +8,33 @@ import (
 	"github.com/rivo/tview"
 )
 
-func EnvListSetup(mu *sync.Mutex, profile *string, app *tview.Application, profiles []string, clusterList *tview.List, dc *databricks.DatabricksConnection, prevText *tview.TextView) *tview.List {
-	envList := tview.NewList()
-	for _, profile := range profiles {
-		envList.AddItem(profile, "", 0, nil)
+type EnvList struct {
+	mu          *sync.Mutex
+	profile     *string
+	app         *tview.Application
+	profiles    []string
+	clusterList *ClusterList
+	dc          *databricks.DatabricksConnection
+	detailText  *Text
+	List        *tview.List
+}
+
+func NewEnvList(mu *sync.Mutex, profile *string, app *tview.Application, profiles []string, clusterList *ClusterList, dc *databricks.DatabricksConnection, detailText *Text) *EnvList {
+	return &EnvList{mu, profile, app, profiles, clusterList, dc, detailText, tview.NewList()}
+}
+
+func (el *EnvList) Setup() {
+	for _, profile := range el.profiles {
+		el.List.AddItem(profile, "", 0, nil)
 	}
 
 	// Set a function to update the cluster list when the highlighted profile changes
-	envList.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
+	el.List.SetChangedFunc(func(index int, mainText, secondaryText string, shortcut rune) {
 		mainTextUncolored := utils.StripColor(mainText)
-		*profile = mainTextUncolored
-		mu.Lock()
-		nameToIDMap := dc.ProfileClusters[*profile]
-		mu.Unlock()
-		UpdateClusterList(mu, app, profile, clusterList, nameToIDMap, prevText)
+		*el.profile = mainTextUncolored
+		el.mu.Lock()
+		el.mu.Unlock()
+		el.clusterList.UpdateClusterList()
 	})
-	envList.SetBorder(true).SetTitle("Workspaces")
-
-	return envList
+	el.List.SetBorder(true).SetTitle("Workspaces")
 }

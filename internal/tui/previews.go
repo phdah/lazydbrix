@@ -4,13 +4,19 @@ import (
 	"github.com/rivo/tview"
 )
 
-func PreTextSetup() *tview.TextView {
-	prevText := tview.NewTextView().
+type Text struct {
+	Text *tview.TextView
+}
+
+func NewText() *Text {
+	detailText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWrap(true)
 
-	prevText.SetBorder(true).SetTitle("Cluster information")
+	return &Text{detailText}
+}
 
-	return prevText
+func (dt *Text) Setup(name string) {
+	dt.Text.SetBorder(true).SetTitle(name)
 }
