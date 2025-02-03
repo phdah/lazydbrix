@@ -104,7 +104,7 @@ func main() {
 
 	if cs.ClusterID != "" {
 		if *outputPath != "" {
-			clusterSelectedLua := fmt.Sprintf("let $PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $CLUSTER_ID = \"%s\"\n", *cs.GetProfile(), *cs.GetClusterName(), *cs.GetClusterID())
+			clusterSelectedLua := fmt.Sprintf("let $DATABRICKS_CONFIG_PROFILE =\"%s\"\nlet $CLUSTER_NAME = \"%s\"\nlet $DATABRICKS_CLUSTER_ID = \"%s\"\n", *cs.GetProfile(), *cs.GetClusterName(), *cs.GetClusterID())
 
 			file, createErr := os.Create(*outputPath)
 			if createErr != nil {
