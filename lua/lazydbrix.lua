@@ -58,9 +58,9 @@ end
 ---@return table _ with profile, clusterName and clusterID
 function Lazydbrix:getClusterSelections()
     return {
-        profile = vim.fn.getenv("PROFILE"),
+        profile = vim.fn.getenv("DATABRICKS_CONFIG_PROFILE"),
         clusterName = vim.fn.getenv("CLUSTER_NAME"),
-        clusterID = vim.fn.getenv("CLUSTER_ID")
+        clusterID = vim.fn.getenv("DATABRICKS_CLUSTER_ID")
     }
 end
 
