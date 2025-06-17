@@ -27,6 +27,11 @@ type ClusterInfo struct {
 	State                  string            `json:"state"`
 }
 
+type ClusterStatus struct {
+	mu    sync.Mutex
+	Value string
+}
+
 // Struct
 type DatabricksConnection struct {
 	// Public
@@ -114,6 +119,19 @@ func (dc *DatabricksConnection) GetClusterDetails(s iface.Cluster) (*ClusterInfo
 	}
 
 	return clusterInfo, nil
+}
+
+// GetClusterStatus fetches stauts of the given cluster
+func (dc *DatabricksConnection) GetClusterStatus(profile *string, clusterID *string) (*ClusterStatus, error) {
+	details, err := dc.workspaces[*profile].Clusters.Get(context.Background(), compute.GetClusterRequest{ClusterId: *clusterID})
+	if err != nil {
+		return &ClusterStatus{}, err
+	}
+
+	clusterStatus := &ClusterStatus{
+		Value: string(details.State),
+	}
+	return clusterStatus, nil
 }
 
 /*
