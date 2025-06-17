@@ -22,6 +22,9 @@ func main() {
 	// Input flags
 	debug := flag.Bool("debug", false, "(bool) Flag to run in debug. Default as false")
 	outputPath := flag.String("nvim", "", "(string) Path to file to which the cluster selection is written")
+	status := flag.Bool("status", false, "(bool) Command to only return status of selected cluster")
+	profile := flag.String("profile", "", "(string) ")
+	clusterID := flag.String("clusterid", "", "(string) ")
 
 	flag.Parse()
 
@@ -38,6 +41,18 @@ func main() {
 	dc := databricks.NewDatabricksConnection(profiles)
 	dc.SetWorkspaces()
 	dc.SetClusters()
+
+	if *status {
+		if *profile == "" || *clusterID == "" {
+			log.Fatal("Flags -profile and -clusterid are required when using -status")
+		}
+		clusterStatus, err := dc.GetClusterStatus(profile, clusterID)
+		if err != nil {
+			log.Panicf("Failed to fetch cluster status. Profile: %s, Cluster ID: %s", *profile, *clusterID)
+		}
+		fmt.Print(clusterStatus.Value)
+		return
+	}
 
 	// TUI components
 	app := tview.NewApplication()
