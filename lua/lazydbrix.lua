@@ -13,6 +13,7 @@ local M = {}
 ---@field bin string
 ---@field repo string
 ---@field branch string
+---@field cluster table<string, string>
 local Lazydbrix = {}
 Lazydbrix.__index = Lazydbrix
 
@@ -55,7 +56,7 @@ function Lazydbrix:sourceFile()
 end
 
 --- Get the environmental variables for cluster selection
----@return table _ with profile, clusterName and clusterID
+---@return table clusterSelections with profile, clusterName and clusterID
 function Lazydbrix:getClusterSelections()
     return {
         profile = vim.fn.getenv("DATABRICKS_CONFIG_PROFILE"),
@@ -115,6 +116,21 @@ from the output file, at terminal close event]],
     })
 end
 
+--- Function to get selected clusters status
+---@return nil
+function Lazydbrix:getClusterStatus()
+    if not self.bin then
+        utils.log_error("No command specified for Lazydbrix")
+        return
+    end
+    local clusterDetails = self:getClusterSelections()
+    local on_exit = function(obj)
+        self.cluster.status = obj.stdout
+    end
+
+    vim.system({ self.bin, "-status", "-profile", clusterDetails.profile, "-clusterid", clusterDetails.clusterID }, { text = true }, on_exit)
+end
+
 -- Create an instance of Lazydbrix
 local lazydbrix = Lazydbrix.newLazydbrix(config)
 
@@ -145,6 +161,16 @@ function M.open()
     else
         lazydbrix:open()
     end
+end
+
+--- Wrapper function of Lazydbrix:getClusterStatus()
+function M.status()
+    if lazydbrix == nil then
+        return
+    else
+        lazydbrix:getClusterStatus()
+    end
+    return lazydbrix.cluster.status
 end
 
 --- Wrapper function of Lazydbrix:sourceFile()

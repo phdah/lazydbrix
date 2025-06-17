@@ -10,5 +10,6 @@ return {
     bin = install.bin(), -- string | path to installed lazydbrix binary, defaults to ~/go/bin/lazydbrix (see install.bin() for more info)
 
     -- Below are things you should never change
-    repo = "github.com/phdah/lazydbrix/cmd/lazydbrix" -- string | github repo to install lazydbrix binary from
+    repo = "github.com/phdah/lazydbrix/cmd/lazydbrix", -- string | github repo to install lazydbrix binary from
+    cluster = {status = ""},
 }
